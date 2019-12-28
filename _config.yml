@@ -102,5 +102,11 @@ deploy:
   repo: https://github.com/calebzhao/calebzhao.github.io.git
   branch: master
 
+# 音乐播放器
 aplayer:
   meting: true
+
+algolia:
+  applicationID: 'EU39VTKAPM'
+  apiKey: '9108b7c9e302dddcc64205e00d26f470'
+  indexName: 'hexo'

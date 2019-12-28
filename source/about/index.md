@@ -14,6 +14,6 @@ reward: false
 ```
 Name: calebzhao
 Address: 武汉
-Github: https://calebzhao.github.com
-Blog: https://calebzhao.github.com
+Github: https://github.com/calebzhao
+Blog: https://calebzhao.github.io
 ```

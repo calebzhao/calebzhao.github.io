@@ -61,14 +61,14 @@ social:
 # Algolia search
 # ---------------
 algolia_search:
-  enable: false
+  enable: true
   hits:
-    per_page: 6
+    per_page: 10
 
   labels:
-    input_placeholder: Search for Posts
-    hits_empty: "We didn't find any results for the search: ${query}" # if there are no result
-    hits_stats: "${hits} results found in ${time} ms"
+    input_placeholder: 请输入搜索关键字
+    hits_empty: "我们没有找到任何搜索结果: ${query}" # if there are no result
+    hits_stats: "找到约${hits}条结果（用时${time}ms）"
 
 # Local search
 # Please see doc for more details: https://jerryc.me/posts/21cfbf15/#本地搜索
@@ -102,10 +102,10 @@ katex:
 avatar: /img/avatar.png
 
 # the banner image of index
-index_img: https://cdn.jsdelivr.net/gh/jerryc127/butterfly_cdn@2.1.0/top_img/index.jpg
+index_img: https://cdn.dode.top/header_background.jpg?imageView2/0/format/jpg/q/75|imageslim
 
 # if the banner of page not setting,it will show the top_img
-default_top_img: https://cdn.jsdelivr.net/gh/jerryc127/butterfly_cdn@2.1.0/top_img/index.jpg
+default_top_img: https://cdn.dode.top/header_background.jpg?imageView2/0/format/jpg/q/75|imageslim
 
 # the default cover of the post
 default_cover: https://cdn.jsdelivr.net/gh/jerryc127/butterfly_cdn@2.1.0/top_img/default.png
@@ -135,7 +135,7 @@ post_meta:
 
 # Please see doc for more details: https://jerryc.me/posts/21cfbf15/#字数统计
 wordcount:
-  enable: false
+  enable: true
 
 toc:
   enable: true
@@ -312,7 +312,7 @@ related_post:
 # 主頁設置
 # 默認top_img全屏，site_info在中間
 # 使用默認, 都無需填寫（建議默認）
-index_top_img_height: #主頁top_img高度 例如 300px/300em/300rem  不能使用百分比
+index_top_img_height: 400px #主頁top_img高度 例如 300px/300em/300rem  不能使用百分比
 
 # 主頁文章COVER顯示位置
 # 三個值可配置 left , right , both
