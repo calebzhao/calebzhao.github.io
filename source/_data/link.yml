@@ -1,0 +1,133 @@
+class:
+  class_name: 友情链接
+  link_list:
+    1:
+      name: 夢魘小棧
+      link: https://blog.ihoey.com
+      avatar: https://cdn.dode.top/avatar.png
+      descr: 心，若沒有棲息的地方，到哪裏都是流浪......
+    2:
+      name: 冰峯博客
+      link: https://www.ad-s.cn/
+      avatar: https://secure.gravatar.com/avatar/4074cd3e035c6e5796f6c263ef8ef0b8?s=56&d=wavatar&r=g
+      descr: 男人就應該保持冷靜，沸騰的水只會被蒸發掉。
+    3:
+      name: 姬長信
+      link: https://blog.isoyu.com/
+      avatar: https://blog.isoyu.com/wp-content/uploads/2015/12/1128902881.png
+      descr: 姬長信主要iPhone開發iOS開發iPad開發Mac開發.現致力為所有移動開發者提供資訊服務、問答服務、代碼下載、工具庫及服務。
+    4:
+      name: hojun
+      link: https://www.hojun.cn/
+      avatar: https://cdn.jsdelivr.net/gh/honjun/ImageHosting/sina/006bYVyvgy1ftand2qurdj303c03cdfv.jpg
+      descr: hello,stranger
+    5:
+      name: 楓糖
+      link: https://maplesugar.gitlab.io
+      avatar: https://maplesugar.gitlab.io/uploads/maple-leaf-avatar.jpg
+      descr: Male Geek
+    6:
+      name: voicezyx’s Blog
+      link: https://voicezyxzyx.github.io/
+      avatar: https://voicezyxzyx.github.io/images/avatar.jpg
+      descr: 大道至簡，知易行難，知行合一
+    7:
+      name: Nykee
+      link: https://www.nykee.cn/
+      avatar: https://image.nykee.cn/nykee.png
+      descr: 前端打雜獅
+    8:
+      name: Xcnte’s Blog
+      link: https://www.xcnte.com
+      avatar: https://www.xcnte.com/Logo.png
+      descr: 人要清醒，外面的掌聲越熱烈越危險
+    9:
+      name: FGHRSH
+      link: https://www.fghrsh.net
+      avatar: //fp1.fghrsh.net/2017/10/11/ee8a7edaf808ee9fe93908cf59f96ef7.png
+      descr: FGHRSH 的博客
+    11:
+      name: TRHX’S BLOG
+      link: https://itrhx.com
+      avatar: https://itrhx.com/images/trhx.png
+      descr: 求知若飢 虛心若愚
+    12:
+      name: Mashiro
+      link: https://2heng.xin
+      avatar: https://view.moezx.cc/images/2018/03/27/avatar.jpg
+      descr: 櫻花莊的白貓
+    13:
+      name: 左岸博客
+      link: https://zrahh.com
+      avatar: https://cdn.zrahh.com/img/avatar.jpg
+      descr: 科技宅有趣的技術分享！
+    15:
+      name: Nroy
+      link: https://www.catwz.com/
+      avatar: https://www.catwz.com/usr/images/head.jpg
+      descr: Nroy
+    16:
+      name: 羽葉丶
+      link: https://yoaio.com
+      avatar: https://yoaio.com/images/avatar.png
+      descr: 身體和靈魂，總有一個在路上！
+    18:
+      name: LarsCheng
+      link: http://larscheng.coding.me/
+      avatar: http://larscheng.coding.me/img/001.gif
+      descr: All the extraordinary from ordinary
+    19:
+      name: Espada
+      link: https://www.yuanmo.xyz
+      avatar: https://hexo-espada.oss-cn-hangzhou.aliyuncs.com/Espada/default/default_avatar.jpg
+      descr: 酸蘿蔔別 ♂ 吃
+    20:
+      name: 4Ark’ Blog
+      link: https://4ark.me/
+      avatar: https://avatars3.githubusercontent.com/u/27952659?s=460&v=4
+      descr: 熱愛計算機技術、崇尚極客精神
+    21:
+      name: 髮際線
+      link: http://www.prchen.com/
+      avatar: http://www.prchen.com/images/eminem.jpg
+      descr: 發現，記錄，分享
+    22:
+      name: 洪衞の博客
+      link: https://sunhwee.com
+      avatar: https://sunhwee.com/hwsun.jpg
+      descr: UESTC CVer！
+    23:
+      name: 辣椒の醬
+      link: https://removeif.github.io
+      avatar: https://removeif.github.io/images/avatar.jpg
+      descr: 後端開發，技術分享
+    24:
+      name: Faber
+      link: http://www.faber.cc/
+      avatar: http://www.faber.cc/medias/avatar.jpg
+      descr: 努力不一定能成功，但永遠不會後悔
+    25:
+      name: 松林羊
+      link: http://www.andus.top
+      avatar: http://www.andus.top/images/head-nav.png
+      descr: 面朝大海，春暖花開
+    26:
+      name: 博採眾長 / 李瑞豪
+      link: https://lruihao.cn
+      avatar: https://lruihao.cn/images/site-meta.jpg
+      descr: 從 ACM 到 Web，分享程式、技巧、乾貨，記錄心情、學習、成長！
+
+
+# class2:
+#   class_name: 無法訪問
+#   link_list:
+#     1:
+#       name: Aaron’s Blog
+#       link: https://aoaoao.me/
+#       avatar: https://v2ex.assets.uxengine.net/gravatar/3800f67051ba9440ffecf2c3e8734933?s=128&d=mm
+#       descr: 00後/大一狗/火車控/SE@CQU/業餘無限墊入門ing
+#     2:
+#       name: bboysoul
+#       link: https://www.bboysoul.com/
+#       avatar: https://www.bboysoul.com/img/blog/head.png
+#       descr: bboysoul
