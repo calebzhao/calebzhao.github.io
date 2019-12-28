@@ -16,7 +16,6 @@
   "scripts": {
     "build": "hexo generate",
     "clean": "hexo clean",
-    "deploy": "hexo deploy",
     "server": "hexo server",
     "clean:yuque": "yuque-hexo clean",
     "deploy": "yuque-hexo sync && hexo deploy",
