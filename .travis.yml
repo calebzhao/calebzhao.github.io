@@ -5,10 +5,10 @@ branches:
   only:
   - hexo
 before_install:
-- cp .travis/id_rsa_deploy ~/.ssh/id_rsa_deploy
-- chmod 600 ~/.ssh/id_rsa_deploy
+- cp .travis/id_rsa_deploy ~/.ssh/id_rsa
+- chmod 600 ~/.ssh/id_rsa
 - eval $(ssh-agent)
-- ssh-add ~/.ssh/id_rsa_deploy
+- ssh-add ~/.ssh/id_rsa
 - cp .travis/ssh_config ~/.ssh/config
 - git config --global user.name 'calebzhao'
 - git config --global user.email 939347507@qq.com
