@@ -30,7 +30,7 @@ install:
 
 # 部署的命令
 script:
-  - cross-env YUQUE_TOKEN=$yuque_token npm run deploy
+  npm run deploy
 # - npm run deploy
 # - hexo g && hexo d
 cache:
