@@ -99,7 +99,7 @@ theme: Butterfly
 ## Docs: https://hexo.io/docs/deployment.html
 deploy:
   type: git
-  repo: https://github.com/calebzhao/calebzhao.github.io.git
+  repo: https://GITHUB_TOKEN@github.com/calebzhao/calebzhao.github.io.git
   branch: master
 
 # 音乐播放器

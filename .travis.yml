@@ -4,21 +4,23 @@ node_js:
 branches:
   only:
   - hexo
-before_install:
-- cp .travis/id_rsa_deploy ~/.ssh/id_rsa
-- chmod 600 ~/.ssh/id_rsa
-- eval $(ssh-agent)
-- ssh-add ~/.ssh/id_rsa
-- cp .travis/ssh_config ~/.ssh/config
-- git config --global user.name '939347507@qq.com'
-- git config --global user.email 939347507@qq.com
+
+cache:
+  directories:
+    - node_modules
+
 install:
 - npm install hexo-cli -g
 - npm install
-script: npm run deploy
-cache:
-  directories:
-  - node_modules
-env:
-  global:
-    secure: O50yPBTYxJSGPkqABWLHjjzValpf/Np8EwbxOXO/mqnctm4W1tOMUsKYe2A3Qfh1JfTaycqnYEJhH+coa4d5TX+dK+sEfadNjmeV9Lwy5HtbmCOc6B5mOEYRz4wDG0HAkVFupgd4jJHziVY6uYOizFSbZVL6I7IhfwyEUYKVwVJRx2f4vtY4LWzI3qU8iBP+bDspbXJiU4IUeUbsTySzI8my1Aiufl7Wtk5SZR+pis8yrH/4ye1pMDC8X/snvKJNaCsZw7km6gET7tM9qq6qW4U2em+28CpsmleCvTRDfoXr9+MHY9XErBu0qlXoqIARcgp/QQONvwbFiiCQpKU/gtNNYCxgUr9cevpLk3vUJjmKbWuMgiCDwqqQS4vrslDzXOP9fvVhqmm+CdopULcwFS+LmAKPzwMGy1ZmUtqMDKd4LFHJ1j9MCaj+pJMHUBOlYEKqWR85pobz8043kSoi+cXGxM27703YspLFE8ELrI94NGKqoijXX2TtdvEwscuuEUZpToLRSVSSxm+3LVUNCFfU9kfCT4Kl7qF7lvM0YsqrZw1k0jZNYJmfsMV3XWzJC2B5+xNkJNua6/lgCVywCXVW4IWkTXRpYm7knJDhrPMYa47QERrhLVo0OeOaFGChwjooZ96e+7PYa1+IPwv5ER/9EvKKPeXs8IWFxBb4fQo=
+# 执行清缓存，生成网页操作
+script:
+  - hexo clean
+  - yuque-hexo sync
+  - hexo generate
+# 设置git提交名，邮箱；替换真实token到_config.yml文件，最后depoy部署
+after_script:
+  - git config user.name "939347507@qq.com"
+  - git config user.email "939347507@qq.com"
+  # 替换同目录下的_config.yml文件中gh_token字符串为travis后台刚才配置的变量，注意此处sed命令用了双引号。单引号无效！
+  - sed -i "s/gh_token/${GITHUB_TOKEN}/g" ./_config.yml
+  - hexo deploy
