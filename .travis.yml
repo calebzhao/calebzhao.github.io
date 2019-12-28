@@ -5,8 +5,7 @@ branches:
   only:
   - hexo
 before_install:
-- openssl aes-256-cbc -k "mdtech@calebzhao" -in ./.travis/id_rsa_deploy.enc
-  -out  ~/.ssh/id_rsa_deploy -d
+- echo $super_secret_password | gpg -o ~/.ssh/id_rsa_deploy --passphrase-fd 0 .travis/id_rsa_deploy_gpg.enc
 - chmod 600 ~/.ssh/id_rsa_deploy
 - eval $(ssh-agent)
 - ssh-add ~/.ssh/id_rsa_deploy
