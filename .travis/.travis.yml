@@ -1,7 +1,7 @@
 language: node_js
 
 node_js:
-  - '10'
+  - "7"
 
 # 项目所在分支
 branches:
