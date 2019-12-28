@@ -21,6 +21,6 @@ script:
 after_script:
   - git config user.name "939347507@qq.com"
   - git config user.email "939347507@qq.com"
-  # 替换同目录下的_config.yml文件中gh_token字符串为travis后台刚才配置的变量，注意此处sed命令用了双引号。单引号无效！
-  - sed -i "s/gh_token/${GITHUB_TOKEN}/g" ./_config.yml
+  # 替换同目录下的_config.yml文件中GITHUB_TOKEN字符串为travis后台刚才配置的变量GITHUB_TOKEN，注意此处sed命令用了双引号。单引号无效！
+  - sed -i "s/GITHUB_TOKEN/${GITHUB_TOKEN}/g" ./_config.yml
   - hexo deploy
