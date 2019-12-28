@@ -7,3 +7,4 @@ public/
 .deploy*/
 /.idea
 .travis/id_rsa_deploy
+/.travis/id_rsa_deploy
