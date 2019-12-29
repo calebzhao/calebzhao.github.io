@@ -18,7 +18,7 @@ menu:
 
 # Favicon
 # ---------------
-favicon: /img/favicon.ico
+favicon: https://cdn.jsdelivr.net/gh/calebzhao/cdn/img/20191229155709.png
 
 # PWA
 # See https://github.com/JLHwung/hexo-offline
