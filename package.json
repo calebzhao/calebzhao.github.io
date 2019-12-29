@@ -17,6 +17,7 @@
     "build": "hexo generate",
     "clean": "hexo clean",
     "server": "hexo server",
+    "d": "hexo deploy",
     "clean:yuque": "yuque-hexo clean",
     "deploy": "yuque-hexo sync && hexo deploy",
     "publish": "npm run clean && npm run deploy",

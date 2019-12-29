@@ -10,6 +10,7 @@ categories: spring cloud
 feign是一个声明式的HTTP客户端，spring-cloud-openfeign将feign集成到spring boot中，在接口上通过注解声明Rest协议，将http调用转换为接口方法的调用，使得客户端调用http服务更加简单。
 
 # 2、原理分析
+
 看到客户端测试类中，我们只用了一行代码，就能完成对远程Rest服务的调用，相当的简单。为什么这么神奇，这几段代码是如何做到的呢？
 
 ## 2.1、@EnableFeignClients 注解声明客户端接口
@@ -151,6 +152,7 @@ private void registerDefaultConfiguration(AnnotationMetadata metadata, BeanDefin
 取出```@EnableFeignClients```注解的参数```defaultConfiguration```，动态注册到spring Context中。  
 
 ## 2.5、registerClientConfiguration 注册configuration
+
 该方法用于注册feign配置，配置来源有2种：
 - 1. ```@EnableFeignClients```注解的```defaultConfiguration```属性注册时（全局默认配置），name为default.xxx
 - 2. ```@FeignClient```注解的```configuration```属性注册时（服务私有配置），name为contextId、name、value属性的值
@@ -406,7 +408,10 @@ class FeignClientFactoryBean implements FactoryBean<Object>, InitializingBean, A
 ```
 ```FeignClientFactoryBean```实现了```FactoryBean```接口，是一个工厂bean
 
+![](https://cdn.jsdelivr.net/gh/calebzhao/cdn/img/20191229142123.png
+
 ### 2.9.1、FeignClientFactoryBean.getObject方法
+
 ```java
 @Override
 public Object getObject() throws Exception {
@@ -476,6 +481,7 @@ public class FeignContext extends NamedContextFactory<FeignClientSpecification> 
 ```
 ```FeignContext```继承```NamedContextFactory```，空参数构造函数指定```FeignClientsConfiguration```类为默认配置。
 ```NamedContextFactory```实现接口```ApplicationContextAware```，注入```ApplicationContextAware```作为parent：
+
 ```java
 /**
 * 这里的泛型C是FeignClientSpecification
