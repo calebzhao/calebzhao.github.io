@@ -279,10 +279,10 @@ reward:
   enable: true
   QR_code:
     - itemlist:
-        img: /img/wechat.jpg
+        img: https://cdn.jsdelivr.net/gh/calebzhao/cdn/img/20191229151714.jpg
         text: 微信
     - itemlist:
-        img: /img/alipay.jpg
+        img: https://cdn.jsdelivr.net/gh/calebzhao/cdn/img/20191229151814.jpg
         text: 支付寶
 
 # 推薦文章
