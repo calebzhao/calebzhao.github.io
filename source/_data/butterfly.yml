@@ -317,7 +317,7 @@ index_top_img_height: 400px #主頁top_img高度 例如 300px/300em/300rem  不�
 # 主頁文章COVER顯示位置
 # 三個值可配置 left , right , both
 # left(全部圖片顯示在左邊)，right(全部圖片顯示在右邊)，both(左右左右順序顯示)
-index_post_cover: both
+index_post_cover: right
 
 # category和tag頁的UI設置
 # index 值代表 UI將與首頁的UI一樣
