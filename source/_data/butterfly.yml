@@ -200,18 +200,18 @@ gitalk:
 
 # valine comment system. https://valine.js.org
 valine:
-  enable: false # if you want use valine,please set this value is true
-  appId: # leancloud application app id
-  appKey: # leancloud application app key
+  enable: true # if you want use valine,please set this value is true
+  appId: HgchHaGng3F6hbefP0mcTaYh-gzGzoHsz # leancloud application app id
+  appKey: j47kWakblNYEeDic8riu7flK # leancloud application app key
   notify: false # valine mail notify (true/false) https://github.com/xCss/Valine/wiki
   verify: false # valine verify code (true/false)
   pageSize: 10 # comment list page size
   avatar: monsterid # gravatar style https://valine.js.org/#/avatar
-  lang: en # i18n: zh-cn/en
-  placeholder: Please leave your footprints # valine comment input placeholder(like: Please leave your footprints )
-  guest_info: nick,mail,link #valine comment header info
+  lang: zh-cn # i18n: zh-cn/en
+  placeholder: 请留下你的足迹 # valine comment input placeholder(like: Please leave your footprints )
+  guest_info: 昵称,邮箱,链接 #valine comment header info
   bg: /img/comment_bg.png # valine background
-  count: false # top_img顯示評論數
+  count: true # top_img顯示評論數
 
 #####     Footer Settings    ####
 # ------------------------------------
