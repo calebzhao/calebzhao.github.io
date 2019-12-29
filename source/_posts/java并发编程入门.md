@@ -1,7 +1,10 @@
 ---
 title: java并发编程入门
 date: 2019-12-29 16:06:54
-tags: java, 并发, juc
+tags: 
+- java
+- 并发
+- juc
 categories: java基础
 ---
 
