@@ -274,7 +274,7 @@ Flink:
   info: Blog 简介： 今日事,今日毕
   comment: 如果需要交换友情链接,请留言
 
-# 打賞按鈕
+# 打赏按钮
 reward:
   enable: true
   QR_code:
@@ -283,9 +283,9 @@ reward:
         text: 微信
     - itemlist:
         img: https://cdn.jsdelivr.net/gh/calebzhao/cdn/img/20191229151814.jpg
-        text: 支付寶
+        text: 支付宝
 
-# 推薦文章
+# 推荐文章
 related_post:
   enable: true
   limit: 6 # 顯示推薦文章數目
