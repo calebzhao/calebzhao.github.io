@@ -9,11 +9,11 @@ categories: java基础
 
 # 1、前置知识
 ## 1.1、jvm参数使用形式
-```-XX:+<option>```表示开启option选项
+-XX:+<option>表示开启option选项
 
-```-XX:-<option> ``` 表示关闭option选项
+-XX:-<option> 表示关闭option选项
 
-```-XX:<option>=<value> ```表示option选项的值设置为value  
+-XX:<option>=<value>表示option选项的值设置为value  
 
 **注意上述符号：X是大写的，“-”是减号，“+”是加号**
 
@@ -1464,22 +1464,22 @@ public class ClassB {
 
 ![图片](https://uploader.shimo.im/f/nd66iUyfJpIwtHAq.png!thumbnail)
 
-        可以看到ClassA是由MyClassLoader加载的（这个毫无疑问，再不懂就说不过去了），而在ClassA的构造方法中实例化了ClassB, 从输出看到ClassB也是由MyClassLoader加载的，验证前面的结论：**每个类都会使用自己的类加载器（即加载自身的类加载器）来去加载其所依赖的类**
+可以看到ClassA是由MyClassLoader加载的（这个毫无疑问，再不懂就说不过去了），而在ClassA的构造方法中实例化了ClassB, 从输出看到ClassB也是由MyClassLoader加载的，验证前面的结论：**每个类都会使用自己的类加载器（即加载自身的类加载器）来去加载其所依赖的类**
 
 ### 2.13.3、线程上下文类加载器
-       线程上下文类加载器是从jdk1.2开始引入的，类Thread中的getContextClassLoader()与setContextClassLoader(ClassLoader cl)分别用来获取和设置上下文类加载器。
+线程上下文类加载器是从jdk1.2开始引入的，类Thread中的getContextClassLoader()与setContextClassLoader(ClassLoader cl)分别用来获取和设置上下文类加载器。
+如果没有通过setContextClassLoader(ClassLoader cl)进行设置的话，线程将继承父线程的上下文类加载器，java线程运行时的上下文类加载器是系统类加载器，在线程中运行的代码可以通过该类加载器来加载类与资源。
     
-        如果没有通过setContextClassLoader(ClassLoader cl)进行设置的话，线程将继承父线程的上下文类加载器，java线程运行时的上下文类加载器是系统类加载器，在线程中运行的代码可以通过该类加载器来加载类与资源。
+
+线程上下文类加载器的重要性：
     
-     线程上下文类加载器的重要性：
+SPI（Service Provider Interface）
     
-     SPI（Service Provider Interface）
+父ClassLoader可以使用当前线程Thread.currentThread().getContextClassLoader()所指定的ClassLoader加载的类，这就改变了父ClassLoader不能使用子ClassLoader或是其他没有直接父子关系的classLoader加载的类的情况，即改变了双亲委托模型。
+
+线程上下文类加载器就是当前线程的current ClassLoader。
     
-     父ClassLoader可以使用当前线程Thread.currentThread().getContextClassLoader()所指定的ClassLoader加载的类，这就改变了父ClassLoader不能使用子ClassLoader或是其他没有直接父子关系的classLoader加载的类的情况，即改变了双亲委托模型。
-    
-      线程上下文类加载器就是当前线程的current ClassLoader。
-    
-      双亲委托模型是自下而上的，即下层的类加载器会委托给上层的类加载器进行加载，但是对于SPI来说，有些接口是由java核心库提供的，而java核心库是由启动类加载器加载的，而这些接口的实现却来自于不同的jar包（厂商提供），java的启动类加载器是不会加载其他来源的jar包，这样传统的双亲委托模型就无法满足SPI的要求，而通过给当前线程设置上下文类加载器（将当前线程上下文的类加载设置为接口的类加载器），那么接口的实现提供方(厂商提供的jar包)就可以获取到当前线程的上下文类加载器，来用和接口一样的类加载器去加载接口的实现，解决接口的类加载器和实现类加载器不一致的问题。
+双亲委托模型是自下而上的，即下层的类加载器会委托给上层的类加载器进行加载，但是对于SPI来说，有些接口是由java核心库提供的，而java核心库是由启动类加载器加载的，而这些接口的实现却来自于不同的jar包（厂商提供），java的启动类加载器是不会加载其他来源的jar包，这样传统的双亲委托模型就无法满足SPI的要求，而通过给当前线程设置上下文类加载器（将当前线程上下文的类加载设置为接口的类加载器），那么接口的实现提供方(厂商提供的jar包)就可以获取到当前线程的上下文类加载器，来用和接口一样的类加载器去加载接口的实现，解决接口的类加载器和实现类加载器不一致的问题。
 
 ### 2.1.4、线程上下文类加载器的一般使用模式
 ```
