@@ -89,6 +89,40 @@ org.springframework.boot.autoconfigure.BackgroundPreinitializer
 
 
 
+### ApplicationListener自动化配置加载原理
+
+我们在编写一个spring boot应用时通常启动的方式是通过```SpringApplication.run(xxx.class, args)```来启动的，
+
+```java
+public class SpringApplication {
+    
+    public SpringApplication(Class<?>... primarySources) {
+            this(null, primarySources);
+    }
+    
+    public SpringApplication(ResourceLoader resourceLoader, Class<?>... primarySources) {
+		this.resourceLoader = resourceLoader;
+		Assert.notNull(primarySources, "PrimarySources must not be null");
+		this.primarySources = new LinkedHashSet<>(Arrays.asList(primarySources));
+		this.webApplicationType = WebApplicationType.deduceFromClasspath();
+        // 关键代码：加载spring.factories中key为ApplicationContextInitializer的自动化配置类的名称
+		setInitializers((Collection) getSpringFactoriesInstances(ApplicationContextInitializer.class));
+        // 关键代码：加载spring.factories中key为ApplicationListener的自动化配置类的名称
+		setListeners((Collection) getSpringFactoriesInstances(ApplicationListener.class));
+		this.mainApplicationClass = deduceMainApplicationClass();
+	}
+
+    public static ConfigurableApplicationContext run(Class<?> primarySource, String... args) {
+            return run(new Class<?>[] { primarySource }, args);
+    }
+
+    public static ConfigurableApplicationContext run(Class<?>[] primarySources, String[] args) {
+            return new SpringApplication(primarySources).run(args);
+    }
+}
+
+```
+
 
 
 ## ApplicationContextInitializer
@@ -114,7 +148,12 @@ org.springframework.boot.autoconfigure.BackgroundPreinitializer
   org.springframework.boot.autoconfigure.logging.ConditionEvaluationReportLoggingListener
   ```
 
-  
+
+
+
+**加载ApplicationContextInitializer的源码见上一节[ApplicationListener自动化配置加载原理](#ApplicationListener自动化配置加载原理)**
+
+
 
 ## EnableAutoConfiguration
 
@@ -270,6 +309,46 @@ org.springframework.cloud.openfeign.loadbalancer.FeignLoadBalancerAutoConfigurat
   ```
 
   
+  
+### EnableAutoConfiguration自动化配置加载原理
+
+在```@SpringBootApplication```注解上可以看到有```@EnableAutoConfiguration```注解，
+
+SpringBootApplication类的源码如下：
+
+  ```java
+@Target(ElementType.TYPE)
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+@Inherited
+@SpringBootConfiguration
+@EnableAutoConfiguration
+@ComponentScan(excludeFilters = { @Filter(type = FilterType.CUSTOM, classes = TypeExcludeFilter.class),
+                                 @Filter(type = FilterType.CUSTOM, classes = AutoConfigurationExcludeFilter.class) })
+public @interface SpringBootApplication {
+    ...省略代码
+}
+  ```
+
+```@EnableAutoConfiguration```注解的源码如下：
+
+```java
+@Target(ElementType.TYPE)
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+@Inherited
+@AutoConfigurationPackage
+@Import(AutoConfigurationImportSelector.class)
+public @interface EnableAutoConfiguration {
+
+}
+```
+
+从上面可以看到它引入了AutoConfigurationImportSelector这个类，该类的具体实现见[springboot2-2自动注入文件spring-factories如何加载详解](https://calebzhao.github.io/2019/12/29/1、springboot2-2自动注入文件spring-factories如何加载详解/)
+
+
+
+
 
 
 
