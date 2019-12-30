@@ -9,11 +9,11 @@ categories: java基础
 
 # 1、前置知识
 ## 1.1、jvm参数使用形式
-```-XX:+<option>```                  表示开启option选项
+```-XX:+<option>```表示开启option选项
 
-```-XX:-<option> ```                  表示关闭option选项
+```-XX:-<option> ``` 表示关闭option选项
 
-```-XX:<option>=<value> ```     表示option选项的值设置为value  
+```-XX:<option>=<value> ```表示option选项的值设置为value  
 
 **注意上述符号：X是大写的，“-”是减号，“+”是加号**
 
