@@ -8,7 +8,7 @@ categories: spring cloud
 ---
 
 # 简介
-```Feign```是一款java的Restful客户端组件，```Feign```使得 Java HTTP 客户端编写更方便。Feign 灵感来源于```Retrofit```, ```JAXRS-2.0```和```WebSocket```。```Feign``` 最初是为了降低统一绑定Denominator 到 HTTP API 的复杂度，不区分是否支持 ReSTfulness。
+Feign是一款java的Restful客户端组件，Feign使得 Java HTTP 客户端编写更方便。Feign 灵感来源于```Retrofit```, ```JAXRS-2.0```和```WebSocket```。```Feign``` 最初是为了降低统一绑定Denominator 到 HTTP API 的复杂度，不区分是否支持 ReSTfulness。
 
 # 为什么选择Feign而不是其他
 你可以使用 ```Jersey``` 和 ```CXF``` 这些来写一个 Rest 或 SOAP 服务的java客服端。你也可以直接使用 Apache HttpClient 来实现。但是 Feign 的目的是尽量的减少资源和代码来实现和 HTTP API 的连接。通过自定义的编码解码器以及错误处理，你可以编写任何基于文本的 HTTP API。
