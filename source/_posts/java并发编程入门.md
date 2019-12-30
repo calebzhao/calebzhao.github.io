@@ -6040,3 +6040,8 @@ if(!lock.validate(stamp)){              // 校验
 useThreadMemoryVarables();              // 使用线程本地堆栈里面的数据进行操作
 ```
 ### 16.7.4、实现原理
+
+```
+fg
+```
+
