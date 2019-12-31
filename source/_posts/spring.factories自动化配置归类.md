@@ -1,5 +1,5 @@
 ---
-title: Class对象的getXXXClass和getXXXName
+title: spring.factories自动化配置归类
 date: 2019-12-29 16:51:55
 tags: 
 - spring
