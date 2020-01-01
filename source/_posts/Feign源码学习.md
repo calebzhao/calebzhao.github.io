@@ -117,7 +117,7 @@ private boolean closeAfterDecode = true;
 private ExceptionPropagationPolicy propagationPolicy = NONE;
 ```
 
-这块是一个典型的构造者模式，```target```方法内部先调用```build```方法新建一个```ReflectFeign```对象，然后调用```ReflectFeign```的```newInstance```方法创建动态代理，代码如下：
+这块是一个典型的构造者模式，`target`方法内部先调用`build`方法新建一个`ReflectFeign`对象，然后调用`ReflectFeign`的`newInstance`方法创建动态代理，代码如下：
 ```java
 //默认使用HardCodedTarget
 public <T> T target(Class<T> apiType, String url) {
@@ -154,12 +154,12 @@ public Feign build() {
 }
 ```
 
-```ReflectiveFeign```构造函数有三个参数：
-- ```ParseHandlersByName``` 将builder所有参数进行封装，并提供解析接口方法的逻辑
-- ```InvocationHandlerFactory``` java动态代理的InvocationHandler的工厂类，默认值是```InvocationHandlerFactory.Default```
-- ```QueryMapEncoder``` 接口参数注解```@QueryMap```时，参数的编码器
+`ReflectiveFeign`构造函数有三个参数：
+- `ParseHandlersByName`将builder所有参数进行封装，并提供解析接口方法的逻辑
+- `InvocationHandlerFactory` java动态代理的InvocationHandler的工厂类，默认值是`InvocationHandlerFactory.Default`
+- `QueryMapEncoder` 接口参数注解`@QueryMap`时，参数的编码器
 
-```ReflectiveFeign.newInstance```方法创建接口动态代理对象：
+`ReflectiveFeign.newInstance`方法创建接口动态代理对象：
 ```java
 public <T> T newInstance(Target<T> target) {
 	//targetToHandlersByName是构造器传入的ParseHandlersByName对象，根据target对象生成MethodHandler映射
@@ -200,9 +200,10 @@ public <T> T newInstance(Target<T> target) {
 - 通过InvocationHandlerFatory创建InvocationHandler
 - 绑定接口的default方法，通过DefaultMethodHandler绑定
 
-类图中已经画出，```SynchronousMethodHandler```和```DefaultMethodHandler```实现了```InvocationHandlerFactory.MethodHandler```接口，动态代理对象调用方法时，如果是default方法，会直接调用接口方法，因为这里将接口的default方法绑定到动态代理对象上了，其他方法根据方法签名找到```SynchronousMethodHandler```对象，调用其invoke方法。
+类图中已经画出，`SynchronousMethodHandler`和`DefaultMethodHandler`实现了`InvocationHandlerFactory.MethodHandler`接口，动态代理对象调用方法时，如果是default方法，会直接调用接口方法，因为这里将接口的default方法绑定到动态代理对象上了，其他方法根据方法签名找到`SynchronousMethodHandler`对象，调用其invoke方法。
 
-```Feign.configKey(Class targetType, Method method)```的实现源码：
+`Feign.configKey(Class targetType, Method method)`的实现源码：
+
 ```java
 /**
 * 例如User类中有 void list(Map map，int pageSize)将会生成User#list(User,int)签名
@@ -229,7 +230,7 @@ public static String configKey(Class targetType, Method method) {
 ```
 
 # Target
-```Target```源码如下：
+`Target`源码如下：
 ```java
 public interface Target<T> {
 	// api 接口类
@@ -335,14 +336,15 @@ static final class ParseHandlersByName {
 ```
 这段代码的逻辑是：
 
-1. 通过```Contract```解析接口方法，生成```MethodMetadata```，默认的```Contract```解析```Feign```自定义的http注解
-2. 根据```MethodMetadata```方法元数据生成特定的```RequestTemplate```的工厂
-3. 使用```SynchronousMethodHandler.Factory```工厂创建```SynchronousMethodHandler```
+1. 通过`Contract`解析接口方法，生成`MethodMetadata`，默认的`Contract`解析```Feign```自定义的http注解
+2. 根据`MethodMetadata`方法元数据生成特定的`RequestTemplate`的工厂
+3. 使用`SynchronousMethodHandler.Factory`工厂创建`SynchronousMethodHandler`
 
-这里有两个工厂不要搞混淆了，```SynchronousMethodHandler```工厂和```RequestTemplate```工厂，```SynchronousMethodHandler```的属性包含```RequestTemplate```工厂
+这里有两个工厂不要搞混淆了，`SynchronousMethodHandler`工厂和`RequestTemplate```工厂，`SynchronousMethodHandler`的属性包含`RequestTemplate`工厂
 
 # Contract解析接口方法生成MethodMetadata
-feign默认的解析器是```Contract.Default```继承了```Contract.BaseContract```，解析生成```MethodMetadata```方法入口：
+feign默认的解析器是`Contract.Default`继承了`Contract.BaseContract`，解析生成`MethodMetadata`方法入口：
+
 ```java
 public interface Contract {
 	/**
@@ -756,25 +758,25 @@ public final class MethodMetadata implements Serializable {
 }
 ```
 
->```Contract```也是feign的一个扩展点，一个优秀组件的架构通常是具有很强的扩展性，feign的架构本身很简单，设计的扩展点也很简单方便，所以受到spring的青睐，将其集成到spring cloud中。spring cloud就是通过```Contract```的扩展(```org.springframework.cloud.openfeign.support.SpringMvcContract```)，实现使用springMVC的注解接入feign。feign自己还实现了使用jaxrs注解接入feign。
+>`Contract`也是feign的一个扩展点，一个优秀组件的架构通常是具有很强的扩展性，feign的架构本身很简单，设计的扩展点也很简单方便，所以受到spring的青睐，将其集成到spring cloud中。spring cloud就是通过`Contract`的扩展(`org.springframework.cloud.openfeign.support.SpringMvcContract`)，实现使用springMVC的注解接入feign。feign自己还实现了使用jaxrs注解接入feign。
 
 # 初始化总结
 上文已经完成了feign初始化结构为动态代理的整个过程，简单的捋一遍：
 
-1. 初始化```Feign.Builder```传入参数，构造```ReflectiveFeign```
-2. ```ReflectiveFeign```通过内部类```ParseHandlersByName```的```Contract```属性，解析接口生成```MethodMetadata```
-3. ```ParseHandlersByName```根据```MethodMetadata```生成```RequestTemplate```工厂
-4. ```ParseHandlersByName```创建```SynchronousMethodHandler```，传入```MethodMetadata```、```RequestTemplate```工厂和```Feign.Builder```相关参数
-5. ```ReflectiveFeign```创建```FeignInvocationHandler```，传入参数```SynchronousMethodHandler```，绑定```DefaultMethodHandler```
-6. ```ReflectiveFeign```根据```FeignInvocationHandler```创建```Proxy```
+1. 初始化`Feign.Builder`传入参数，构造`ReflectiveFeign`
+2. `ReflectiveFeign`通过内部类`ParseHandlersByName`的`Contract`属性，解析接口生成`MethodMetadata`
+3. `ParseHandlersByName`根据`MethodMetadata`生成`RequestTemplate`工厂
+4. `ParseHandlersByName`创建`SynchronousMethodHandler`，传入`MethodMetadata`、`RequestTemplate`工厂和`Feign.Builder`相关参数
+5. `ReflectiveFeign`创建`FeignInvocationHandler`，传入参数`SynchronousMethodHandler`，绑定`DefaultMethodHandler`
+6. `ReflectiveFeign`根据`FeignInvocationHandler`创建`Proxy`
 
 关键的几个类是：
 
-- ```ReflectiveFeign``` 初始化入口
-- ```FeignInvocationHandler``` 实现动态代理的InvocHandler
-- ```SynchronousMethodHandler``` 方法处理器，方法调用处理器
-- ```MethodMetadata``` 方法元数据
-- ```Contract.Default```契约解析默认实现
+- `ReflectiveFeign` 初始化入口
+- `FeignInvocationHandler` 实现动态代理的InvocHandler
+- `SynchronousMethodHandler` 方法处理器，方法调用处理器
+- `MethodMetadata` 方法元数据
+- `Contract.Default`契约解析默认实现
 
 # 接口调用
 为方便理解，分析完feign源码后，我将feign执行过程分成三层，如下图：
@@ -813,7 +815,8 @@ public class ReflectiveFeign extends Feign {
 }
 ```
 
-根据方法找到```MethodHandler```，除接口的```default```方法外(```default```方法直接调用，无需feign处理)，找到的是```SynchronousMethodHandler```对象，然后调用```SynchronousMethodHandlerd.invoke```方法：
+根据方法找到`MethodHandler`，除接口的`default`方法外(`default`方法直接调用，无需feign处理)，找到的是`SynchronousMethodHandler`对象，然后调用`SynchronousMethodHandlerd.invoke`方法：
+
 ```java
 final class SynchronousMethodHandler implements MethodHandler {
 	private final MethodMetadata metadata;
@@ -987,7 +990,7 @@ public final class RequestTemplate implements Serializable {
 }
 ```
 
-在```SynchronousMethodHandler.invoke```方法中生成```RequestTemplate```
+在`SynchronousMethodHandler.invoke`方法中生成`RequestTemplate`
 ```java
 //buildTemplateFromArgs是RequestTemplate.Factory实现类
 RequestTemplate template = buildTemplateFromArgs.create(argv);
@@ -1096,7 +1099,7 @@ private static class BuildTemplateByResolvingArgs implements RequestTemplate.Fac
 
  将会解析form参数，填充到bodyTemplate中
 
-该类用于对参数列表中的form参数(**未被表达式使用**的```@Param```参数)使用encoder编码
+该类用于对参数列表中的form参数(**未被表达式使用**的`@Param`参数)使用encoder编码
 
 ```java
 private static class BuildFormEncodedTemplateFromArgs extends BuildTemplateByResolvingArgs {
@@ -1403,7 +1406,8 @@ public Request request() {
 	return Request.create(this.method, this.url(), this.headers(), this.requestBody());
 }
 ```
-- ```Request```的```create```方法
+
+- `Reques``的`create`方法
 ```java
 public static Request create(HttpMethod httpMethod,
                                String url,
@@ -1426,7 +1430,7 @@ Object executeAndDecode(RequestTemplate template, Options options) throws Throwa
 	...省略部分代码
 }
 ```
-client是一个```Client```接口，默认实现类是```Client.Default```，使用java api中的```HttpURLConnection```发送http请求。feign还实现了：
+client是一个`Client`接口，默认实现类是`Client.Default`，使用java api中的`HttpURLConnection`发送http请求。feign还实现了：
 - feign.Client.Proxied
 - ApacheHttpClient
 - OkHttpClient
@@ -1436,15 +1440,15 @@ client是一个```Client```接口，默认实现类是```Client.Default```，使
 # 接口调用过程总结
 我们再将接口调用过程捋一遍：
 
-1、接口的动态代理```Proxy```调用接口方法会执行的```FeignInvocationHandler```  
-2、```FeignInvocationHandler```通过方法签名在属性```Map<Method, MethodHandler> dispatch```中找到```SynchronousMethodHandler```，调用```invoke```方法  
-3、```SynchronousMethodHandler```的```invoke```方法根据传入的方法参数，通过自身属性工厂对象```RequestTemplate.Factory```创建```RequestTemplate```，工厂里面会用根据需要进行```Encode```  
-4、```SynchronousMethodHandler```遍历自身属性```RequestInterceptor```列表，对```RequestTemplate```进行改造  
-4、```SynchronousMethodHandler```调用自身```Target```属性的```apply```方法，将```RequestTemplate```转换为```Request```对象  
-5、```SynchronousMethodHandler```调用自身```Client```的```execute```方法，传入```Request```对象  
-6、```Client```将```Request```转换为http请求，发送后将http响应转换为```Response```对象  
-7、```SynchronousMethodHandler```调用```Decoder```的方法对```Response```对象解码后返回  
-8、返回的对象最后返回到```Proxy```  
+1、接口的动态代理`Proxy`调用接口方法会执行的`FeignInvocationHandler`  
+2、`FeignInvocationHandler`通过方法签名在属性`Map<Method, MethodHandler> dispatch`中找到`SynchronousMethodHandler`，调用`invoke`方法  
+3、`SynchronousMethodHandler`的`invoke`方法根据传入的方法参数，通过自身属性工厂对象`RequestTemplate.Factory`创建`RequestTemplate`，工厂里面会用根据需要进行`Encode`  
+4、`SynchronousMethodHandler`遍历自身属性`RequestInterceptor`列表，对`RequestTemplate`进行改造  
+4、`SynchronousMethodHandler`调用自身`Target`属性的`apply`方法，将```RequestTemplate```转换为`Request`对象  
+5、`SynchronousMethodHandler`调用自身`Client`的`execute`方法，传入`Request`对象  
+6、`Client`将`Request`转换为http请求，发送后将http响应转换为`Response`对象  
+7、`SynchronousMethodHandler`调用`Decoder`的方法对`Response`对象解码后返回  
+8、返回的对象最后返回到`Proxy` 
 
 
 时序图如下：  

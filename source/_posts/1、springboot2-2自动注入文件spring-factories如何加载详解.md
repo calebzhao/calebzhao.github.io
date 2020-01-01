@@ -15,7 +15,7 @@ public class Application {
 }
 ```
 
-启动类使用```@SpringBootApplication```注解，再看下这个注解内容:
+启动类使用`@SpringBootApplication`注解，再看下这个注解内容:
 ```java
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
@@ -57,9 +57,9 @@ public @interface EnableAutoConfiguration {
 }
 ```
 
-发现加载了一个```AutoConfigurationImportSelector.class```类
+发现加载了一个`AutoConfigurationImportSelector.class`类
 
-温馨提示：所有实现ImportSelector的类，都会在启动时被```org.springframework.context.annotation.ConfigurationClassParser```中的```processImports```进行实例化，并执行```selectImports```方法。
+温馨提示：所有实现ImportSelector的类，都会在启动时被`org.springframework.context.annotation.ConfigurationClassParser`中的`processImports```进行实例化，并执行`selectImports`方法。
 
 # 2、AutoConfigurationImportSelector中的selectImports
 ```java
@@ -143,7 +143,7 @@ public class AutoConfigurationImportSelector implements DeferredImportSelector, 
 		return EnableAutoConfiguration.class;
 	}
 ```
-**从上述代码可以看到获取自动化配置相关的类最终是调用```SpringFactoriesLoader.loadFactoryNames(Class cls, ClassLoader classLoader);```实现的**
+**从上述代码可以看到获取自动化配置相关的类最终是调用`SpringFactoriesLoader.loadFactoryNames(Class cls, ClassLoader classLoader);`实现的**
 
 # 3、 SpringFactoriesLoader如何加载
 
@@ -218,8 +218,7 @@ public final class SpringFactoriesLoader {
 ```
 
 # 4、spring.factories加载过程总结
-1. 我们自己会使用```@SpringBootApplication```、```@EnableDiscoryClient```等注解
-2. 这些注解一般会再引入```@Import(AutoConfigurationImportSelector.class)```这样的类  
-3. ```AutoConfigurationImportSelector```这样的Selector会执行其中的```String[] selectImports(AnnotationMetadata annotationMetadata)```方法来加载```spring.factories```中的自动化配置，方法内部会调用```SpringFactoriesLoader
-				.loadFactoryNames(Class factoryType, this.beanClassLoader)```来**真正加载spring.factories**
-4. ```SpringFactoriesLoader.loadFactoryNames(Class factoryType, this.beanClassLoader)```**扫描所有jar**中的META-INF/spring.factories文件，将内容存储到一个```MultiValueMap<String, String>```中缓存起来，下次加载时直接从缓存中找  
+1. 我们自己会使用`@SpringBootApplication`、`@EnableDiscoryClient`等注解
+2. 这些注解一般会再引入`@Import(AutoConfigurationImportSelector.class)```这样的类  
+3. `AutoConfigurationImportSelector`这样的Selector会执行其中的`String[] selectImports(AnnotationMetadata annotationMetadata)`方法来加载`spring.factories`中的自动化配置，方法内部会调用`SpringFactoriesLoader.loadFactoryNames(Class factoryType, this.beanClassLoader)`来**真正加载spring.factories**
+4. `SpringFactoriesLoader.loadFactoryNames(Class factoryType, this.beanClassLoader)`**扫描所有jar**中的META-INF/spring.factories文件，将内容存储到一个`MultiValueMap<String, String>`中缓存起来，下次加载时直接从缓存中找  
