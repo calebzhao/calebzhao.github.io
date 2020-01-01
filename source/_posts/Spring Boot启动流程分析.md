@@ -26,7 +26,7 @@ public class ClientApplication {
 
 # 2、分析 SpringApplication构造函数
 
-```SpringApplication```源码：
+`SpringApplication`源码：
 
 ```java
 public class SpringApplication {
@@ -93,24 +93,24 @@ this.webApplicationType = deduceWebApplicationType();
 // 应用类型
 public enum WebApplicationType {
     // 非servlet应用、非reactive应用
-	NONE,
+    NONE,
     // servlet应用
     SERVLET,
     // reactive反应式应用
     REACTIVE;
-    
+
     private static final String[] SERVLET_INDICATOR_CLASSES = { "javax.servlet.Servlet",
-			"org.springframework.web.context.ConfigurableWebApplicationContext" };
+                                                               "org.springframework.web.context.ConfigurableWebApplicationContext" };
 
-	private static final String WEBMVC_INDICATOR_CLASS = "org.springframework.web.servlet.DispatcherServlet";
+    private static final String WEBMVC_INDICATOR_CLASS = "org.springframework.web.servlet.DispatcherServlet";
 
-	private static final String WEBFLUX_INDICATOR_CLASS = "org.springframework.web.reactive.DispatcherHandler";
+    private static final String WEBFLUX_INDICATOR_CLASS = "org.springframework.web.reactive.DispatcherHandler";
 
-	private static final String JERSEY_INDICATOR_CLASS = "org.glassfish.jersey.servlet.ServletContainer";
+    private static final String JERSEY_INDICATOR_CLASS = "org.glassfish.jersey.servlet.ServletContainer";
 
-	private static final String SERVLET_APPLICATION_CONTEXT_CLASS = "org.springframework.web.context.WebApplicationContext";
+    private static final String SERVLET_APPLICATION_CONTEXT_CLASS = "org.springframework.web.context.WebApplicationContext";
 
-	private static final String REACTIVE_APPLICATION_CONTEXT_CLASS = "org.springframework.boot.web.reactive.context.ReactiveWebApplicationContext";
+    private static final String REACTIVE_APPLICATION_CONTEXT_CLASS = "org.springframework.boot.web.reactive.context.ReactiveWebApplicationContext";
 
     // 从类路径推倒应用类型
     static WebApplicationType deduceFromClasspath() {
@@ -123,7 +123,7 @@ public enum WebApplicationType {
             // 是reactive反应式程序
             return WebApplicationType.REACTIVE;
         }
-        　// 当加载的类路径中不包含SERVLET_INDICATOR_CLASSES中定义的任何一个类时，返回标准应用
+        // 当加载的类路径中不包含SERVLET_INDICATOR_CLASSES中定义的任何一个类时，返回标准应用
         for (String className : SERVLET_INDICATOR_CLASSES) {
             if (!ClassUtils.isPresent(className, null)) {
                 // 是标准应用
@@ -146,7 +146,7 @@ setInitializers((Collection)getSpringFactoriesInstances(ApplicationContextInitia
 
 初始化initializers属性，加载classpath下```META-INF/spring.factories```中配置的ApplicationContextInitializer。
 
-```ApplicationContextInitializer``` 的作用是什么？源码如下。
+`ApplicationContextInitializer`的作用是什么？源码如下。
 
 ```java
 public interface ApplicationContextInitializer<C extends ConfigurableApplicationContext> {
@@ -158,7 +158,6 @@ public interface ApplicationContextInitializer<C extends ConfigurableApplication
     void initialize(C applicationContext);
 
 }
-
 ```
 
 用来初始化指定的 Spring 应用上下文，如注册属性资源、激活 Profiles 等。
@@ -175,13 +174,13 @@ public void setInitializers(Collection<? extends ApplicationContextInitializer<?
 
 ```java
 private <T> Collection<T> getSpringFactoriesInstances(Class<T> type) {
-		return getSpringFactoriesInstances(type, new Class<?>[] {});
+    return getSpringFactoriesInstances(type, new Class<?>[] {});
 }
 
 private <T> Collection<T> getSpringFactoriesInstances(Class<T> type, Class<?>[] parameterTypes, Object... args) {
     ClassLoader classLoader = getClassLoader();
     // Use names and ensure unique to protect against duplicates
-    
+
     // SpringFactoriesLoader.loadFactoryNames()方法将会
     // 从calssptah下的META-INF/spring.factories中读取 key为
     // org.springframework.context.ApplicationContextInitializer的值，
@@ -231,7 +230,7 @@ public interface ApplicationListener<E extends ApplicationEvent> extends EventLi
 
 设置监听器和设置初始化器调用的方法是一样的，只是传入的类型不一样，设置监听器的接口类型为：```getSpringFactoriesInstances```，对应的```spring-boot-autoconfigure-2.2.1.RELEASE.jar!/META-INF/spring.factories``` 文件配置内容请见下方。
 
-```java
+```properties
 # Application Listeners
 org.springframework.context.ApplicationListener=\
 org.springframework.boot.autoconfigure.BackgroundPreinitializer
@@ -272,68 +271,68 @@ SpringApplication的run方法代码如下：
 
 ```java
 public ConfigurableApplicationContext run(String... args) {
-     // 1、创建并启动计时监控类
+    // 1、创建并启动计时监控类
     StopWatch stopWatch = new StopWatch();
     stopWatch.start();
-    
-     // 2、初始化应用上下文和异常报告集合
+
+    // 2、初始化应用上下文和异常报告集合
     ConfigurableApplicationContext context = null;
     Collection<SpringBootExceptionReporter> exceptionReporters = new ArrayList<>();
-    
-     // 3、设置系统属性 `java.awt.headless` 的值，默认值为：true
+
+    // 3、设置系统属性 `java.awt.headless` 的值，默认值为：true
     configureHeadlessProperty();
-    
-     // 4、加载classpath下面的META-INF/spring.factories中key为SpringApplicationRunListener的配置
+
+    // 4、加载classpath下面的META-INF/spring.factories中key为SpringApplicationRunListener的配置
     SpringApplicationRunListeners listeners = getRunListeners(args);
     // 执行所有runlistener的starting方法，实际上发布一个【ApplicationStartingEvent】事件
     listeners.starting();
-    
+
     try {
         // 5、实例化ApplicationArguments对象，初始化默认应用参数类
         ApplicationArguments applicationArguments = new DefaultApplicationArguments(args);
-       
+
         // 6、 创建Environment （web环境 or 标准环境）+配置Environment，主要是把run方法的参数配置
         // 到Environment  发布【ApplicationEnvironmentPreparedEvent】事件
         ConfigurableEnvironment environment = prepareEnvironment(listeners, applicationArguments);
         configureIgnoreBeanInfo(environment);
-        
+
         // 7、打印banner，SpringBoot启动时，控制台输出的一个歪歪扭扭的很不清楚的Spring几个大字母，
         // 也可以自定义，参考博客：http://majunwei.com/view/201708171646079868.html
         Banner printedBanner = printBanner(environment);
-        
+
         // 8、 根据不同environment创建应用上下文（返回ConfigurableApplicationContext的子类实例）
         context = createApplicationContext();
-        
+
         // 9、通过SpringFactoriesLoader检索META-INF/spring.factories中的SpringBootExceptionReporter，
         // 获取并实例化异常分析器
         exceptionReporters = getSpringFactoriesInstances(SpringBootExceptionReporter.class,
-                      new Class[] { ConfigurableApplicationContext.class }, context);
-      
+                                                         new Class[] { ConfigurableApplicationContext.class }, context);
+
         // 10、 上下文相关预处理，发布【ApplicationPreparedEvent】事件 
         // 为ApplicationContext加载environment，之后逐个执行ApplicationContextInitializer的initialize()方法来进一步封装ApplicationContext，
         // 并调用所有的SpringApplicationRunListener的contextPrepared()方法，【EventPublishingRunListener只提供了一个空的contextPrepared()方法】，
         // 之后初始化IoC容器，并调用SpringApplicationRunListener的contextLoaded()方法，广播ApplicationContext的IoC加载完成，
         // 这里就包括通过@EnableAutoConfiguration导入的各种自动配置类。
         prepareContext(context, environment, listeners, applicationArguments, printedBanner);
-        
+
         // 11、 执行context的refresh，并且调用context的registerShutdownHook方法
         refreshContext(context);
-        
+
         // 12、应用上下文刷新后置处理，是一个空方法
         afterRefresh(context, applicationArguments);
-        
+
         // 13、停止计时监控类
         stopWatch.stop();
-        
+
         // 14、输出日志记录执行主类名、时间信息
         if (this.logStartupInfo) {
             new StartupInfoLogger(this.mainApplicationClass).logStarted(getApplicationLog(), stopWatch);
         }
-        
+
         // 15、执行所有runlisteners的started方法，发布【ApplicationStartedEvent】事件(应用已经启动的事件)
         listeners.started(context);
-        
-     　 // 16、遍历所有注册的ApplicationRunner和CommandLineRunner，并执行其run()方法。
+
+        // 16、遍历所有注册的ApplicationRunner和CommandLineRunner，并执行其run()方法。
         // 我们可以实现自己的ApplicationRunner或者CommandLineRunner，来对SpringBoot的启动过程进行扩展。
         callRunners(context, applicationArguments);
     }
@@ -351,7 +350,7 @@ public ConfigurableApplicationContext run(String... args) {
         handleRunFailure(context, ex, exceptionReporters, null);
         throw new IllegalStateException(ex);
     }
-    
+
     // 18、返回应用上下文
     return context;
 }
@@ -387,18 +386,18 @@ stopWatch.start();
 
 ```java
 public class StopWatch {
-    
+
     public void start() throws IllegalStateException {
-		start("");
-	}
-    
+        start("");
+    }
+
     public void start(String taskName) throws IllegalStateException {
-		if (this.currentTaskName != null) {
-			throw new IllegalStateException("Can't start StopWatch: it's already running");
-		}
-		this.currentTaskName = taskName;
-		this.startTimeNanos = System.nanoTime();
-	}
+        if (this.currentTaskName != null) {
+            throw new IllegalStateException("Can't start StopWatch: it's already running");
+        }
+        this.currentTaskName = taskName;
+        this.startTimeNanos = System.nanoTime();
+    }
 
 }
 ```
@@ -453,18 +452,18 @@ private SpringApplicationRunListeners getRunListeners(String[] args) {
 class SpringApplicationRunListeners {
     private final Log log;
 
-	private final List<SpringApplicationRunListener> listeners;
+    private final List<SpringApplicationRunListener> listeners;
 
-	SpringApplicationRunListeners(Log log, Collection<? extends SpringApplicationRunListener> listeners) {
-		this.log = log;
-		this.listeners = new ArrayList<>(listeners);
-	}
-    
+    SpringApplicationRunListeners(Log log, Collection<? extends SpringApplicationRunListener> listeners) {
+        this.log = log;
+        this.listeners = new ArrayList<>(listeners);
+    }
+
     void starting() {
-		for (SpringApplicationRunListener listener : this.listeners) {
-			listener.starting();
-		}
-	}
+        for (SpringApplicationRunListener listener : this.listeners) {
+            listener.starting();
+        }
+    }
 }
 ```
 
@@ -509,39 +508,39 @@ class SpringApplicationRunListeners{
 * 
 */
 public class EventPublishingRunListener implements SpringApplicationRunListener, Ordered {
-    
+
     // SpringApplication.run(xxx.class, args)运行时内部创建的SpringApplication实例，
     // 构造方法实例化时设置了List<ApplicationContextInitializer<?>> initializers及List<ApplicationListener<?>> listeners属性
-	private final SpringApplication application;
+    private final SpringApplication application;
 
     // SpringApplication.run(xxx.class, args)传入的args参数
-	private final String[] args;
+    private final String[] args;
 
     // 在构造方法中初始化的，实例类型为SimpleApplicationEventMulticaster
-	private final SimpleApplicationEventMulticaster initialMulticaster;
-    
+    private final SimpleApplicationEventMulticaster initialMulticaster;
+
     public EventPublishingRunListener(SpringApplication application, String[] args) {
-		this.application = application;
-		this.args = args;
-         //创建了简单应用程序事件发布多播器SimpleApplicationEventMulticaster
-		this.initialMulticaster = new SimpleApplicationEventMulticaster();
-          // 观察者模式的典型应用。
-          // 将所有的ApplicationListener观察者加入到initialMulticaster中，当被观察者(SpringApplication)向观察者(ApplicationListener)
-         // 发布事件时，内部遍历所有的ApplicationListener(观察者)找出对发布的事件(ApplicationEvent)感兴趣的ApplicationListener(观察者)
-         // 然后调用ApplicationListener(观察者)的onEvent(ApplicationEvent event)方法回调观察者
-		for (ApplicationListener<?> listener : application.getListeners()) {
-			this.initialMulticaster.addApplicationListener(listener);
-		}
-	}
-    
+        this.application = application;
+        this.args = args;
+        //创建了简单应用程序事件发布多播器SimpleApplicationEventMulticaster
+        this.initialMulticaster = new SimpleApplicationEventMulticaster();
+        // 观察者模式的典型应用。
+        // 将所有的ApplicationListener观察者加入到initialMulticaster中，当被观察者(SpringApplication)向观察者(ApplicationListener)
+        // 发布事件时，内部遍历所有的ApplicationListener(观察者)找出对发布的事件(ApplicationEvent)感兴趣的ApplicationListener(观察者)
+        // 然后调用ApplicationListener(观察者)的onEvent(ApplicationEvent event)方法回调观察者
+        for (ApplicationListener<?> listener : application.getListeners()) {
+            this.initialMulticaster.addApplicationListener(listener);
+        }
+    }
+
     @Override
-	public void starting() {
-         // 向所有注册的ApplicationListener(观察者)发布ApplicationStartingEvent事件，
-         // 注意initialMulticaster内部会找出对发布的事件(ApplicationEvent)感兴趣的ApplicationListener(观察者)
+    public void starting() {
+        // 向所有注册的ApplicationListener(观察者)发布ApplicationStartingEvent事件，
+        // 注意initialMulticaster内部会找出对发布的事件(ApplicationEvent)感兴趣的ApplicationListener(观察者)
         // 并回调观察者的onEvent(ApplicationEvent event)方法
-		this.initialMulticaster.multicastEvent(new ApplicationStartingEvent(this.application, this.args));
-	}
-    
+        this.initialMulticaster.multicastEvent(new ApplicationStartingEvent(this.application, this.args));
+    }
+
     ...省略发布其他事件的方法
 }
 ```
@@ -567,92 +566,92 @@ SimpleApplicationEventMulticaster类的源码如下：
 */
 public class SimpleApplicationEventMulticaster extends AbstractApplicationEventMulticaster {
     // 指定ApplicationListener在哪个线程执行器中执行（可以不指定），具体含义参见上面类级别的文档
-	@Nullable
-	private Executor taskExecutor;
+    @Nullable
+    private Executor taskExecutor;
 
     // 错误处理器，作用参见invokeListener(ApplicationListener<?> listener, ApplicationEvent event)方法内注释
-	@Nullable
-	private ErrorHandler errorHandler;
-    
+    @Nullable
+    private ErrorHandler errorHandler;
+
     public SimpleApplicationEventMulticaster() {
-        
-	}
-    
+
+    }
+
     // 可以指定ApplicationListener在哪个线程执行器中执行
     public void setTaskExecutor(@Nullable Executor taskExecutor) {
-		this.taskExecutor = taskExecutor;
-	}
-    
+        this.taskExecutor = taskExecutor;
+    }
+
     // 可以指定ApplicationListener的错误处理器
     public void setErrorHandler(@Nullable ErrorHandler errorHandler) {
-		this.errorHandler = errorHandler;
-	}
+        this.errorHandler = errorHandler;
+    }
 
 
-    
+
     @Override
-	public void multicastEvent(ApplicationEvent event) {
-		multicastEvent(event, resolveDefaultEventType(event));
-	}
-    
+    public void multicastEvent(ApplicationEvent event) {
+        multicastEvent(event, resolveDefaultEventType(event));
+    }
+
     @Override
-	public void multicastEvent(final ApplicationEvent event, @Nullable ResolvableType eventType) {
-		ResolvableType type = (eventType != null ? eventType : resolveDefaultEventType(event));
-         // 获得ApplicationListener的执行器（该执行器是可选的）
-		Executor executor = getTaskExecutor();
-         // 找到对该ApplicationEvent感兴趣的监听器(ApplicationListener)
-		for (ApplicationListener<?> listener : getApplicationListeners(event, type)) {
-             // 判断是否指定了ApplicationListener在哪个线程执行器中执行
-			if (executor != null) {
-                 // 在指定的taskExecutor中执行，不会阻塞调用线程
-				executor.execute(() -> invokeListener(listener, event));
-			}
-			else {
-                 // 没有指定taskExecutor，执行在调用线程中执行（可能会阻塞调用线程）
-				invokeListener(listener, event);
-			}
-		}
-	}
-    
+    public void multicastEvent(final ApplicationEvent event, @Nullable ResolvableType eventType) {
+        ResolvableType type = (eventType != null ? eventType : resolveDefaultEventType(event));
+        // 获得ApplicationListener的执行器（该执行器是可选的）
+        Executor executor = getTaskExecutor();
+        // 找到对该ApplicationEvent感兴趣的监听器(ApplicationListener)
+        for (ApplicationListener<?> listener : getApplicationListeners(event, type)) {
+            // 判断是否指定了ApplicationListener在哪个线程执行器中执行
+            if (executor != null) {
+                // 在指定的taskExecutor中执行，不会阻塞调用线程
+                executor.execute(() -> invokeListener(listener, event));
+            }
+            else {
+                // 没有指定taskExecutor，执行在调用线程中执行（可能会阻塞调用线程）
+                invokeListener(listener, event);
+            }
+        }
+    }
+
     protected void invokeListener(ApplicationListener<?> listener, ApplicationEvent event) {
         // 是否有错误处理器，如果有错误处理器，那么ApplicationListener方法内执行抛出异常时会捕获抛出的异常交由指定的错误处理器去处理
         // 否则spring不处理
-		ErrorHandler errorHandler = getErrorHandler();
-		if (errorHandler != null) {
-			try {
-				doInvokeListener(listener, event);
-			}
-			catch (Throwable err) {
-                 // 交由错误处理器处理异常
-				errorHandler.handleError(err);
-			}
-		}
-		else {
-             // 如果ApplicationListener方法执行时产生异常，则不处理，由上级处理
-			doInvokeListener(listener, event);
-		}
-	}
-    
+        ErrorHandler errorHandler = getErrorHandler();
+        if (errorHandler != null) {
+            try {
+                doInvokeListener(listener, event);
+            }
+            catch (Throwable err) {
+                // 交由错误处理器处理异常
+                errorHandler.handleError(err);
+            }
+        }
+        else {
+            // 如果ApplicationListener方法执行时产生异常，则不处理，由上级处理
+            doInvokeListener(listener, event);
+        }
+    }
+
     private void doInvokeListener(ApplicationListener listener, ApplicationEvent event) {
-		try {
-             // onApplicationEvent方法就是我们平时使用ApplicationLisenter接口时要实现的方法，回调观察者
-			listener.onApplicationEvent(event);
-		}
-		catch (ClassCastException ex) {
-			String msg = ex.getMessage();
-			if (msg == null || matchesClassCastMessage(msg, event.getClass())) {
-				// Possibly a lambda-defined listener which we could not resolve the generic event type for
-				// -> let's suppress the exception and just log a debug message.
-				Log logger = LogFactory.getLog(getClass());
-				if (logger.isTraceEnabled()) {
-					logger.trace("Non-matching event type for listener: " + listener, ex);
-				}
-			}
-			else {
-				throw ex;
-			}
-		}
-	}
+        try {
+            // onApplicationEvent方法就是我们平时使用ApplicationLisenter接口时要实现的方法，回调观察者
+            listener.onApplicationEvent(event);
+        }
+        catch (ClassCastException ex) {
+            String msg = ex.getMessage();
+            if (msg == null || matchesClassCastMessage(msg, event.getClass())) {
+                // Possibly a lambda-defined listener which we could not resolve the generic event type for
+                // -> let's suppress the exception and just log a debug message.
+                Log logger = LogFactory.getLog(getClass());
+                if (logger.isTraceEnabled()) {
+                    logger.trace("Non-matching event type for listener: " + listener, ex);
+                }
+            }
+            else {
+                throw ex;
+            }
+        }
+    }
 }
 ```
 
@@ -669,33 +668,33 @@ DefaultApplicationArguments类的源码如下：
 ```java
 public class DefaultApplicationArguments implements ApplicationArguments {
 
-	private final Source source;
+    private final Source source;
 
-	private final String[] args;
+    private final String[] args;
 
-	public DefaultApplicationArguments(String... args) {
-		Assert.notNull(args, "Args must not be null");
-		this.source = new Source(args);
-		this.args = args;
-	}
-    
+    public DefaultApplicationArguments(String... args) {
+        Assert.notNull(args, "Args must not be null");
+        this.source = new Source(args);
+        this.args = args;
+    }
+
     private static class Source extends SimpleCommandLinePropertySource {
 
-		Source(String[] args) {
-			super(args);
-		}
+        Source(String[] args) {
+            super(args);
+        }
 
-		@Override
-		public List<String> getNonOptionArgs() {
-			return super.getNonOptionArgs();
-		}
+        @Override
+        public List<String> getNonOptionArgs() {
+            return super.getNonOptionArgs();
+        }
 
-		@Override
-		public List<String> getOptionValues(String name) {
-			return super.getOptionValues(name);
-		}
+        @Override
+        public List<String> getOptionValues(String name) {
+            return super.getOptionValues(name);
+        }
 
-	}
+    }
 }
 ```
 
@@ -716,41 +715,41 @@ SimpleCommandLineArgsParser类源码如下：
 
 ```java
 class SimpleCommandLineArgsParser {
-    
-	public CommandLineArgs parse(String... args) {
-		CommandLineArgs commandLineArgs = new CommandLineArgs();
-         // 比如命令 java --server.port=8888 --spring.profiles.active=prod -jar app.jar
-		for (String arg : args) {
-             // 参数是否以--打头，比如参数 --server.port=8888
-			if (arg.startsWith("--")) {
-                  // 截取--字符串后面的字符串，比如--server.port=8888变成server.port=8888
-				String optionText = arg.substring(2, arg.length());
-				String optionName;
-				String optionValue = null;
-                  // 是否有值
-				if (optionText.contains("=")) {
-                      // 等号前面的字符串作为name
-					optionName = optionText.substring(0, optionText.indexOf('='));
-                      // 等号后面的字符串作为value
-					optionValue = optionText.substring(optionText.indexOf('=')+1, optionText.length());
-				}
-				else {
-                      // --后面的整个字符串作为name
-					optionName = optionText;
-				}
-				if (optionName.isEmpty() || (optionValue != null && optionValue.isEmpty())) {
-					throw new IllegalArgumentException("Invalid argument syntax: " + arg);
-				}
-                
-                  // 存储name和value到CommandLineArgs中
-				commandLineArgs.addOptionArg(optionName, optionValue);
-			}
-			else {
-				commandLineArgs.addNonOptionArg(arg);
-			}
-		}
-		return commandLineArgs;
-	}
+
+    public CommandLineArgs parse(String... args) {
+        CommandLineArgs commandLineArgs = new CommandLineArgs();
+        // 比如命令 java --server.port=8888 --spring.profiles.active=prod -jar app.jar
+        for (String arg : args) {
+            // 参数是否以--打头，比如参数 --server.port=8888
+            if (arg.startsWith("--")) {
+                // 截取--字符串后面的字符串，比如--server.port=8888变成server.port=8888
+                String optionText = arg.substring(2, arg.length());
+                String optionName;
+                String optionValue = null;
+                // 是否有值
+                if (optionText.contains("=")) {
+                    // 等号前面的字符串作为name
+                    optionName = optionText.substring(0, optionText.indexOf('='));
+                    // 等号后面的字符串作为value
+                    optionValue = optionText.substring(optionText.indexOf('=')+1, optionText.length());
+                }
+                else {
+                    // --后面的整个字符串作为name
+                    optionName = optionText;
+                }
+                if (optionName.isEmpty() || (optionValue != null && optionValue.isEmpty())) {
+                    throw new IllegalArgumentException("Invalid argument syntax: " + arg);
+                }
+
+                // 存储name和value到CommandLineArgs中
+                commandLineArgs.addOptionArg(optionName, optionValue);
+            }
+            else {
+                commandLineArgs.addNonOptionArg(arg);
+            }
+        }
+        return commandLineArgs;
+    }
 }
 ```
 
@@ -770,10 +769,10 @@ configureIgnoreBeanInfo(environment);
 ```java
 private ConfigurableEnvironment prepareEnvironment(SpringApplicationRunListeners listeners,
                                                    ApplicationArguments applicationArguments) {
-     // 3.6.1、 获取（或者创建）应用ConfigurableEnvironment
+    // 3.6.1、 获取（或者创建）应用ConfigurableEnvironment
     ConfigurableEnvironment environment = getOrCreateEnvironment();
-    
-     // 3.6.2、 配置应用环境
+
+    // 3.6.2、 配置应用环境
     configureEnvironment(environment, applicationArguments.getSourceArgs());
     // 3.6.3、
     ConfigurationPropertySources.attach(environment);
@@ -858,7 +857,7 @@ public class ApplicationConversionService extends FormattingConversionService {
         }
         configure(this);
     }
-    
+
     public static ConversionService getSharedInstance() {
         ApplicationConversionService sharedInstance = ApplicationConversionService.sharedInstance;
         if (sharedInstance == null) {
@@ -872,32 +871,32 @@ public class ApplicationConversionService extends FormattingConversionService {
         }
         return sharedInstance;
     }
-    
+
     public static void configure(FormatterRegistry registry) {
-		DefaultConversionService.addDefaultConverters(registry);
-		DefaultFormattingConversionService.addDefaultFormatters(registry);
-		addApplicationFormatters(registry);
-		addApplicationConverters(registry);
-	}
-    
+        DefaultConversionService.addDefaultConverters(registry);
+        DefaultFormattingConversionService.addDefaultFormatters(registry);
+        addApplicationFormatters(registry);
+        addApplicationConverters(registry);
+    }
+
     public static void addApplicationFormatters(FormatterRegistry registry) {
-		registry.addFormatter(new CharArrayFormatter());
-		registry.addFormatter(new InetAddressFormatter());
-		registry.addFormatter(new IsoOffsetFormatter());
-	}
-    
+        registry.addFormatter(new CharArrayFormatter());
+        registry.addFormatter(new InetAddressFormatter());
+        registry.addFormatter(new IsoOffsetFormatter());
+    }
+
     public static void addApplicationConverters(ConverterRegistry registry) {
-		addDelimitedStringConverters(registry);
-		registry.addConverter(new StringToDurationConverter());
-		registry.addConverter(new DurationToStringConverter());
-		registry.addConverter(new NumberToDurationConverter());
-		registry.addConverter(new DurationToNumberConverter());
-		registry.addConverter(new StringToDataSizeConverter());
-		registry.addConverter(new NumberToDataSizeConverter());
-		registry.addConverter(new StringToFileConverter());
-		registry.addConverterFactory(new LenientStringToEnumConverterFactory());
-		registry.addConverterFactory(new LenientBooleanToEnumConverterFactory());
-	}
+        addDelimitedStringConverters(registry);
+        registry.addConverter(new StringToDurationConverter());
+        registry.addConverter(new DurationToStringConverter());
+        registry.addConverter(new NumberToDurationConverter());
+        registry.addConverter(new DurationToNumberConverter());
+        registry.addConverter(new StringToDataSizeConverter());
+        registry.addConverter(new NumberToDataSizeConverter());
+        registry.addConverter(new StringToFileConverter());
+        registry.addConverterFactory(new LenientStringToEnumConverterFactory());
+        registry.addConverterFactory(new LenientBooleanToEnumConverterFactory());
+    }
 }
 ```
 
@@ -910,24 +909,24 @@ public class ApplicationConversionService extends FormattingConversionService {
 ```java
 public class DefaultConversionService extends GenericConversionService {
     public DefaultConversionService() {
-		addDefaultConverters(this);
-	}
-    
+        addDefaultConverters(this);
+    }
+
     public static void addDefaultConverters(ConverterRegistry converterRegistry) {
-		addScalarConverters(converterRegistry);
-		addCollectionConverters(converterRegistry);
+        addScalarConverters(converterRegistry);
+        addCollectionConverters(converterRegistry);
 
-		converterRegistry.addConverter(new ByteBufferConverter((ConversionService) converterRegistry));
-		converterRegistry.addConverter(new StringToTimeZoneConverter());
-		converterRegistry.addConverter(new ZoneIdToTimeZoneConverter());
-		converterRegistry.addConverter(new ZonedDateTimeToCalendarConverter());
+        converterRegistry.addConverter(new ByteBufferConverter((ConversionService) converterRegistry));
+        converterRegistry.addConverter(new StringToTimeZoneConverter());
+        converterRegistry.addConverter(new ZoneIdToTimeZoneConverter());
+        converterRegistry.addConverter(new ZonedDateTimeToCalendarConverter());
 
-		converterRegistry.addConverter(new ObjectToObjectConverter());
-		converterRegistry.addConverter(new IdToEntityConverter((ConversionService) converterRegistry));
-		converterRegistry.addConverter(new FallbackObjectToStringConverter());
-		converterRegistry.addConverter(new ObjectToOptionalConverter((ConversionService) converterRegistry));
-	}
-    
+        converterRegistry.addConverter(new ObjectToObjectConverter());
+        converterRegistry.addConverter(new IdToEntityConverter((ConversionService) converterRegistry));
+        converterRegistry.addConverter(new FallbackObjectToStringConverter());
+        converterRegistry.addConverter(new ObjectToOptionalConverter((ConversionService) converterRegistry));
+    }
+
     ...省略部分代码
 }
 ```
@@ -938,7 +937,7 @@ public class DefaultConversionService extends GenericConversionService {
 
 ```java
 public class DefaultFormattingConversionService extends FormattingConversionService {
-    
+
     private static final boolean jsr354Present;
 
     private static final boolean jodaTimePresent;
@@ -948,7 +947,7 @@ public class DefaultFormattingConversionService extends FormattingConversionServ
         jsr354Present = ClassUtils.isPresent("javax.money.MonetaryAmount", classLoader);
         jodaTimePresent = ClassUtils.isPresent("org.joda.time.LocalDate", classLoader);
     }
-    
+
     public static void addDefaultFormatters(FormatterRegistry formatterRegistry) {
         // Default handling of number values
         formatterRegistry.addFormatterForFieldAnnotation(new NumberFormatAnnotationFormatterFactory());
@@ -974,7 +973,7 @@ public class DefaultFormattingConversionService extends FormattingConversionServ
             new DateFormatterRegistrar().registerFormatters(formatterRegistry);
         }
     }
-    
+
     ...省略部分代码
 }
 ```
@@ -988,20 +987,20 @@ public class DefaultFormattingConversionService extends FormattingConversionServ
 ```java
 public class SpringApplication {
 
-    
+
     ...省略代码
-    
-    // 是否添加命令行参数到ConfigurableEnvironment中
-    private boolean addCommandLineProperties = true;
-    
+
+        // 是否添加命令行参数到ConfigurableEnvironment中
+        private boolean addCommandLineProperties = true;
+
     // 默认属性，如果有则会合并到ConfigurableEnvironment中
     private Map<String, Object> defaultProperties;
-        
+
     public void setDefaultProperties(Map<String, Object> defaultProperties) {
-		this.defaultProperties = defaultProperties;
-	}
-    
-        
+        this.defaultProperties = defaultProperties;
+    }
+
+
     protected void configureEnvironment(ConfigurableEnvironment environment, String[] args) {
 
         if (this.addConversionService) {
@@ -1012,16 +1011,16 @@ public class SpringApplication {
         configurePropertySources(environment, args);
         configureProfiles(environment, args);
     }
-    
+
     ...省略部分代码
-    
-   /**
+
+        /**
     * 创建一个基于命令行属性的PropertySource并将其添加到ConfigurableEnvironment中
     *
     * @param environment 环境对象，根据应用类型可能是StandardEnvironment、StandardServletEnvironment、StandardReactiveWebEnvironment
     * @param args 要被添加的命令行参数数据，如 ['--server.port=9090', '--spring.profiles.active=prod']
     */
-    protected void configurePropertySources(ConfigurableEnvironment environment, String[] args) {
+        protected void configurePropertySources(ConfigurableEnvironment environment, String[] args) {
         // 获得AbstractEnvironment中的propertySources属性，代表可变属性源，
         // MutablePropertySources类中包含addFirst、addBefore、addLast、remove、replace等操纵属性源的方法
         MutablePropertySources sources = environment.getPropertySources();
@@ -1038,14 +1037,14 @@ public class SpringApplication {
             if (sources.contains(name)) {
                 // 根据name获取ConfigurableEnvironment中已存在的属性源
                 PropertySource<?> source = sources.get(name);
-                
+
                 // 声明1个有属性源复合功能的属性源，当复合属性源中维护的多个属性源都有相同的key时，位置靠前的属性源中的值优先返回
                 CompositePropertySource composite = new CompositePropertySource(name);
                 // 将参数args属性作为第1个属性源，由于它的位置在第1个，所以它的优先级最高
                 composite.addPropertySource(new SimpleCommandLinePropertySource("springApplicationCommandLineArgs", args));
                 // 将ConfigurableEnvironment中已存在的属性源作为第2个属性源，优先级比上面一行的SimpleCommandLinePropertySource低
                 composite.addPropertySource(source);
-                
+
                 //  将ConfigurableEnvironment中已存在的单一属性源替换为上面创建的复合属性源
                 sources.replace(name, composite);
             }
@@ -1056,7 +1055,7 @@ public class SpringApplication {
             }
         }
     }
-    
+
     ...省略代码
 }
 ```
@@ -1071,28 +1070,28 @@ public class SpringApplication {
 public class SpringApplication {
     // 额外的profile的名称，可以是多个（表示同时启用多个profile）
     private Set<String> additionalProfiles = new HashSet<>();
-    
+
     ...省略代码
-        
-    public void setAdditionalProfiles(String... profiles) {
-		this.additionalProfiles = new LinkedHashSet<>(Arrays.asList(profiles));
-	}    
-    
+
+        public void setAdditionalProfiles(String... profiles) {
+        this.additionalProfiles = new LinkedHashSet<>(Arrays.asList(profiles));
+    }    
+
     /**
     * 这个方法的作用是将通过代码设置的profile的名称追加到environment中，例如如下实例：
     * SpringApplication app = new SpringApplication(TestApplication.class);
     * app.setAdditionalProfiles("dev", "test");
     * app.run(args);
     */
-	protected void configureProfiles(ConfigurableEnvironment environment, String[] args) {
-		Set<String> profiles = new LinkedHashSet<>(this.additionalProfiles);
-         // environment.getActiveProfiles()获得当前激活的profile的名称集合(返回的是Set<String>类型)
-         // 然后加入profiles集合中，此时profiles集合中包含2种profile来源：this.additionalProfiles及environment中的
-		profiles.addAll(Arrays.asList(environment.getActiveProfiles()));
-         // 设置使用的profile
-		environment.setActiveProfiles(StringUtils.toStringArray(profiles));
-	}
-    
+    protected void configureProfiles(ConfigurableEnvironment environment, String[] args) {
+        Set<String> profiles = new LinkedHashSet<>(this.additionalProfiles);
+        // environment.getActiveProfiles()获得当前激活的profile的名称集合(返回的是Set<String>类型)
+        // 然后加入profiles集合中，此时profiles集合中包含2种profile来源：this.additionalProfiles及environment中的
+        profiles.addAll(Arrays.asList(environment.getActiveProfiles()));
+        // 设置使用的profile
+        environment.setActiveProfiles(StringUtils.toStringArray(profiles));
+    }
+
     ...省略代码
 }
 ```
@@ -1112,27 +1111,27 @@ ConfigurationPropertySources.attach(environment);
 ```java
 public final class ConfigurationPropertySources {
 
-	/**
+    /**
 	 * The name of the {@link PropertySource} {@link #adapt adapter}.
 	 */
-	private static final String ATTACHED_PROPERTY_SOURCE_NAME = "configurationProperties";
+    private static final String ATTACHED_PROPERTY_SOURCE_NAME = "configurationProperties";
 
-	private ConfigurationPropertySources() {
-	}
-    
+    private ConfigurationPropertySources() {
+    }
+
     public static void attach(Environment environment) {
-		Assert.isInstanceOf(ConfigurableEnvironment.class, environment);
-		MutablePropertySources sources = ((ConfigurableEnvironment) environment).getPropertySources();
-		PropertySource<?> attached = sources.get(ATTACHED_PROPERTY_SOURCE_NAME);
-		if (attached != null && attached.getSource() != sources) {
-			sources.remove(ATTACHED_PROPERTY_SOURCE_NAME);
-			attached = null;
-		}
-		if (attached == null) {
-			sources.addFirst(new ConfigurationPropertySourcesPropertySource(ATTACHED_PROPERTY_SOURCE_NAME,
-					new SpringConfigurationPropertySources(sources)));
-		}
-	}
+        Assert.isInstanceOf(ConfigurableEnvironment.class, environment);
+        MutablePropertySources sources = ((ConfigurableEnvironment) environment).getPropertySources();
+        PropertySource<?> attached = sources.get(ATTACHED_PROPERTY_SOURCE_NAME);
+        if (attached != null && attached.getSource() != sources) {
+            sources.remove(ATTACHED_PROPERTY_SOURCE_NAME);
+            attached = null;
+        }
+        if (attached == null) {
+            sources.addFirst(new ConfigurationPropertySourcesPropertySource(ATTACHED_PROPERTY_SOURCE_NAME,
+                                                                            new SpringConfigurationPropertySources(sources)));
+        }
+    }
 }
 ```
 
@@ -1149,15 +1148,15 @@ listeners.environmentPrepared(environment);
 ```java
 class SpringApplicationRunListeners {
 
-	private final Log log;
+    private final Log log;
 
-	private final List<SpringApplicationRunListener> listeners;
-    
-	void environmentPrepared(ConfigurableEnvironment environment) {
-		for (SpringApplicationRunListener listener : this.listeners) {
-			listener.environmentPrepared(environment);
-		}
-	}
+    private final List<SpringApplicationRunListener> listeners;
+
+    void environmentPrepared(ConfigurableEnvironment environment) {
+        for (SpringApplicationRunListener listener : this.listeners) {
+            listener.environmentPrepared(environment);
+        }
+    }
 }
 ```
 
@@ -1166,18 +1165,18 @@ class SpringApplicationRunListeners {
 ```java
 public class EventPublishingRunListener implements SpringApplicationRunListener, Ordered {
 
-	private final SpringApplication application;
+    private final SpringApplication application;
 
-	private final String[] args;
+    private final String[] args;
 
-	private final SimpleApplicationEventMulticaster initialMulticaster;
-    
+    private final SimpleApplicationEventMulticaster initialMulticaster;
+
     @Override
-	public void environmentPrepared(ConfigurableEnvironment environment) {
-		this.initialMulticaster
-				.multicastEvent(new ApplicationEnvironmentPreparedEvent(this.application, this.args, environment));
-	}
-    
+    public void environmentPrepared(ConfigurableEnvironment environment) {
+        this.initialMulticaster
+            .multicastEvent(new ApplicationEnvironmentPreparedEvent(this.application, this.args, environment));
+    }
+
 }
 ```
 
@@ -1192,7 +1191,7 @@ private void configureIgnoreBeanInfo(ConfigurableEnvironment environment) {
     // 获取jvm系统属性spring.beaninfo.ignore
     if (System.getProperty(CachedIntrospectionResults.IGNORE_BEANINFO_PROPERTY_NAME) == null) {
         // 如果jvm系统属性中不存在key为spring.beaninfo.ignore的系统属性，则从ConfigurableEnvironment中获取它的值
-	   // 如果ConfigurableEnvironment中也没有key为spring.beaninfo.ignore的属性，则使用默认值true
+        // 如果ConfigurableEnvironment中也没有key为spring.beaninfo.ignore的属性，则使用默认值true
         // 如果从environment获取到了说明则属性可能来源于系统环境变量、命令行参数、代码设置
         Boolean ignore = environment.getProperty("spring.beaninfo.ignore", Boolean.class, Boolean.TRUE);
         // 设置到jvm系统属性中
@@ -1225,27 +1224,27 @@ context = createApplicationContext();
 
 ```java
 public class SpringApplication {
-    
+
     public static final String DEFAULT_CONTEXT_CLASS = "org.springframework.context."
-                + "annotation.AnnotationConfigApplicationContext";
+        + "annotation.AnnotationConfigApplicationContext";
 
     public static final String DEFAULT_SERVLET_WEB_CONTEXT_CLASS = "org.springframework.boot."
-                + "web.servlet.context.AnnotationConfigServletWebServerApplicationContext";
+        + "web.servlet.context.AnnotationConfigServletWebServerApplicationContext";
 
     public static final String DEFAULT_REACTIVE_WEB_CONTEXT_CLASS = "org.springframework."
-                + "boot.web.reactive.context.AnnotationConfigReactiveWebServerApplicationContext";
-    
-    ...省略代码
-        
-   // 该属性值是可选的，指定使用哪个类创建ConfigurableApplicationContext，如果不指定则根据应用类型创建相应的ApplicationContext
-   private Class<? extends ConfigurableApplicationContext> applicationContextClass;
+        + "boot.web.reactive.context.AnnotationConfigReactiveWebServerApplicationContext";
 
-    ...省略代码
+    // ...省略代码
+
+    // 该属性值是可选的，指定使用哪个类创建ConfigurableApplicationContext，如果不指定则根据应用类型创建相应的ApplicationContext
+    private Class<? extends ConfigurableApplicationContext> applicationContextClass;
+
+    // ...省略代码
 
     /**
-    * 用于创建ApplicationContext的策略方法。 
-    * 默认情况下，此方法将使用任何明确设置的应用程序上下文或应用程序上下文类，然后再降级为使用合适的默认值。
-    */
+     * 用于创建ApplicationContext的策略方法。 
+     * 默认情况下，此方法将使用任何明确设置的应用程序上下文或应用程序上下文类，然后再降级为使用合适的默认值。
+     */
     protected ConfigurableApplicationContext createApplicationContext() {
         Class<?> contextClass = this.applicationContextClass;
         if (contextClass == null) {
@@ -1298,12 +1297,12 @@ public class SpringApplication {
 *    之间是互相独立的，而他们拥有相同的父上下文
 */
 public interface ApplicationContext extends EnvironmentCapable, ListableBeanFactory, HierarchicalBeanFactory,
-		MessageSource, ApplicationEventPublisher, ResourcePatternResolver {
-     
+MessageSource, ApplicationEventPublisher, ResourcePatternResolver {
+
     // 返回当前应用程序上下文的唯一id，如果没有可能返回null        
     @Nullable
-	String getId();
-    
+    String getId();
+
     // 返回此上下文所属的已部署应用的名称        
     String getApplicationName();
 
@@ -1312,11 +1311,11 @@ public interface ApplicationContext extends EnvironmentCapable, ListableBeanFact
 
     // 返回这个上下文第一次被加载的时间戳（毫秒）        
     long getStartupDate();
-    
+
     // 返回这个上下文的父上下文        
     @Nullable
-	ApplicationContext getParent();
-    
+    ApplicationContext getParent();
+
     // 为这个上下文公开AutowireCapableBeanFactory功能。
     // 除非用于初始化位于应用程序上下文之外的bean实例，并将Spring bean的生命周期(全部或部分)应用于这些实例，
     // 应用程序通常不会使用到此功能，        
@@ -1343,85 +1342,85 @@ public interface ApplicationContext extends EnvironmentCapable, ListableBeanFact
 */
 public interface ConfigurableApplicationContext extends ApplicationContext, Lifecycle, Closeable {
     // 应用上下文配置时，这些符号用于分割多个配置路径
-	String CONFIG_LOCATION_DELIMITERS = ",; \t\n";
-    
+    String CONFIG_LOCATION_DELIMITERS = ",; \t\n";
+
     // 工厂中ConversionService bean的名称。如果没有提供，则使用默认的转换规则。
     // 参见org.springframework.core.convert.ConversionService
     String CONVERSION_SERVICE_BEAN_NAME = "conversionService";
-    
+
 
     // LoadTimeWaver类所对应的Bean在容器中的名字。如果提供了该实例，上下文会使用临时的ClassLoader
     // 这样，LoadTimeWaver就可以使用bean确切的类型了
     //参见org.springframework.instrument.classloading.LoadTimeWeaver
     String LOAD_TIME_WEAVER_BEAN_NAME = "loadTimeWeaver";
-    
+
     // Environment类在容器中的bean名称
     String ENVIRONMENT_BEAN_NAME = "environment";
-    
+
     // System系统变量在容器中对应的Bean的名字，参见java.lang.System#getProperties()
     String SYSTEM_PROPERTIES_BEAN_NAME = "systemProperties";
-    
-     // System 环境变量在容器中对应的Bean的名字，参见java.lang.System#getenv()
+
+    // System 环境变量在容器中对应的Bean的名字，参见java.lang.System#getenv()
     String SYSTEM_ENVIRONMENT_BEAN_NAME = "systemEnvironment";
-    
+
     // 用于关闭应用时钩子线程的名称，默认SpringContextShutdownHook，参见registerShutdownHook()方法
     String SHUTDOWN_HOOK_THREAD_NAME = "SpringContextShutdownHook";
-    
+
     // 为应用上下文设置一个唯一的id
     void setId(String id);
-    
+
     // 为该上下文设置父上下文。
-	// 需要注意的是，父上下文一经设定就不应该修改。并且一般不会在构造方法中对其进行配置，因为很多时候
+    // 需要注意的是，父上下文一经设定就不应该修改。并且一般不会在构造方法中对其进行配置，因为很多时候
     // 其父容器还不可用。比如WebApplicationContext。
     void setParent(@Nullable ApplicationContext parent);
-    
+
     // 设置容器的Environment变量
     void setEnvironment(ConfigurableEnvironment environment);
-    
+
     // 以COnfigurableEnvironment的形式返回此容器的环境，以使用户更好的进行配置
     @Override
-	ConfigurableEnvironment getEnvironment();
-    
+    ConfigurableEnvironment getEnvironment();
+
     /**
      * 此方法一般在读取应用上下文配置的时候调用，用以向此容器中增加BeanFactoryPostProcessor。
      * 增加的Processor会在容器refresh的时候使用。
      */
     void addBeanFactoryPostProcessor(BeanFactoryPostProcessor postProcessor);
-    
+
     /**
      * 向容器增加一个ApplicationListener，增加的Listener用于发布上下文事件如refresh和shutdown等，
      * 需要注意的是，如果此上下文还没有启动，那么在此注册的Listener将会在上下文refresh的时候，全部被调用，
      * 如果上下文已经是active状态的了，就会在multicaster中使用
      */
     void addApplicationListener(ApplicationListener<?> listener);
-    
+
     /**
      * 向容器中注入给定的Protocol resolver，允许多个实例同时存在。
      * 在此注册的每一个resolver都将会在上下的标准解析规则之前使用。因此，某种程度上来说
      * 这里注册的resolver可以覆盖上下文的resolver
      */
     void addProtocolResolver(ProtocolResolver resolver);
-    
+
     /**
      * 加载或刷新资源配置文件（XML、properties, 与数据库相关的schema）。
      * 由于此方法是一个初始化方法，因此如果调用此方法失败的情况下，要将其已经创建的Bean销毁。
      * 换句话说，调用此方法以后，要么所有的Bean都实例化好了，要么就一个都没有实例化
      */
     void refresh() throws BeansException, IllegalStateException;
-    
+
     /**
      * 向JVM注册一个回调函数，用以在JVM关闭时，销毁此应用上下文。
      */
     void registerShutdownHook();
-    
+
     /**
      * 关闭此应用上下文，释放其所占有的所有资源和锁。并销毁其所有创建好的singleton Beans
      * 实现的时候，此方法不应该调用其父上下文的close方法，因为其父上下文具有自己独立的生命周期
      * 多次调用此方法，除了第一次，后面的调用应该被忽略。
      */
     @Override
-	void close();
-    
+    void close();
+
     /**
      * 检测此上下文是否时启动状态。
      * 也就是说在它关闭之前该上下文至少被refresh过一次
@@ -1431,7 +1430,7 @@ public interface ConfigurableApplicationContext extends ApplicationContext, Life
      * 参见getBeanFactory()方法
      */
     boolean isActive();
-    
+
     /**
      * 返回此应用上下文的底层存储bean的容器。
      * 千万不要使用此方法来对BeanFactory生成的Bean做后置处理，因为单例Bean在此之前已经生成，
@@ -1475,10 +1474,12 @@ prepareContext(context, environment, listeners, applicationArguments, printedBan
 ```java
 public class SpringApplication {
 
-    ...省略部分代码
-    
+    // ...省略部分代码
+
     private void prepareContext(ConfigurableApplicationContext context, ConfigurableEnvironment environment,
-                SpringApplicationRunListeners listeners, ApplicationArguments applicationArguments, Banner printedBanner) {
+                                SpringApplicationRunListeners listeners, ApplicationArguments applicationArguments, 
+                                Banner printedBanner) {
+
         // 3.11.1、将environment保存到上一步创建的ConfigurableApplicationContext中
         context.setEnvironment(environment);
         // 3.11.2、ConfigurableApplicationContext创建后的后置处理逻辑
@@ -1511,8 +1512,8 @@ public class SpringApplication {
         load(context, sources.toArray(new Object[0]));
         listeners.contextLoaded(context);
     }
-    
-    ...省略部分代码
+
+    // ...省略部分代码
 }
 ```
 
@@ -1538,29 +1539,29 @@ postProcessApplicationContext方法的源码如下：
 
 ```java
 public class SpringApplication {
-    
-    ...省略部分代码
-    
+
+    // ...省略部分代码
+
     // 生成bean的名称时所使用的的生成器    
     private BeanNameGenerator beanNameGenerator;
-    
+
     // 默认ApplicationConversionService应该添加到应用上下文(ApplicationContext)的Environment中
     private boolean addConversionService = true;
-    
+
     // 构造方法及set方法均可赋值
     private ResourceLoader resourceLoader;
-    
+
     // 设置在创建bean时bean的名称的生成器
     public void setBeanNameGenerator(BeanNameGenerator beanNameGenerator) {
-		this.beanNameGenerator = beanNameGenerator;
-	}
-    
+        this.beanNameGenerator = beanNameGenerator;
+    }
+
     // 设置ApplicationConversionService是否应该添加到应用上下文(ApplicationContext)的Environment中
     public void setAddConversionService(boolean addConversionService) {
-		this.addConversionService = addConversionService;
-	}
-    
-	// ConfigurableApplicationContext创建后的后置处理
+        this.addConversionService = addConversionService;
+    }
+
+    // ConfigurableApplicationContext创建后的后置处理
     protected void postProcessApplicationContext(ConfigurableApplicationContext context) {
         // 判断是否设置了bean名称的生成器
         if (this.beanNameGenerator != null) {
@@ -1594,19 +1595,19 @@ applyInitializers(context)的源码如下：
 
 ```java
 public class SpringApplication {
-    
+
     private List<ApplicationContextInitializer<?>> initializers;
-    
+
     // 构造方法的源码细节前面分析过，参见第2节
     public SpringApplication(ResourceLoader resourceLoader, Class<?>... primarySources) {
-		
-        ...省略代码
-            
-		setInitializers((Collection) getSpringFactoriesInstances(ApplicationContextInitializer.class));
-        
-		...省略代码
-	}
-    
+
+        // ...省略代码
+
+        setInitializers((Collection) getSpringFactoriesInstances(ApplicationContextInitializer.class));
+
+        // ...省略代码
+    }
+
     // 回调所有ApplicationContextInitializer的实现类的initialize(ConfigurableApplicationContext context)方法
     protected void applyInitializers(ConfigurableApplicationContext context) {
         // 遍历spring.factories中key为org.springframework.context.ApplicationContextInitializer的实现类
@@ -1676,15 +1677,15 @@ listeners.contextPrepared(context);
 ```java
 class SpringApplicationRunListeners {
 
-	private final Log log;
+    private final Log log;
 
-	private final List<SpringApplicationRunListener> listeners;
-    
+    private final List<SpringApplicationRunListener> listeners;
+
     void contextPrepared(ConfigurableApplicationContext context) {
-		for (SpringApplicationRunListener listener : this.listeners) {
-			listener.contextPrepared(context);
-		}
-	}   
+        for (SpringApplicationRunListener listener : this.listeners) {
+            listener.contextPrepared(context);
+        }
+    }   
 }
 ```
 
@@ -1694,15 +1695,15 @@ class SpringApplicationRunListeners {
 public class EventPublishingRunListener implements SpringApplicationRunListener, Ordered {
     private final SpringApplication application;
 
-	private final String[] args;
+    private final String[] args;
 
-	private final SimpleApplicationEventMulticaster initialMulticaster;
-    
+    private final SimpleApplicationEventMulticaster initialMulticaster;
+
     @Override
-	public void contextPrepared(ConfigurableApplicationContext context) {
-		this.initialMulticaster
-				.multicastEvent(new ApplicationContextInitializedEvent(this.application, this.args, context));
-	}
+    public void contextPrepared(ConfigurableApplicationContext context) {
+        this.initialMulticaster
+            .multicastEvent(new ApplicationContextInitializedEvent(this.application, this.args, context));
+    }
 }
 ```
 
@@ -1951,14 +1952,14 @@ class SpringApplicationRunListeners {
 public class EventPublishingRunListener implements SpringApplicationRunListener, Ordered {
     private final SpringApplication application;
 
-	private final String[] args;
+    private final String[] args;
 
-	private final SimpleApplicationEventMulticaster initialMulticaster;
-    
+    private final SimpleApplicationEventMulticaster initialMulticaster;
+
     @Override
-	public void running(ConfigurableApplicationContext context) {
-		context.publishEvent(new ApplicationReadyEvent(this.application, this.args, context));
-	}
+    public void running(ConfigurableApplicationContext context) {
+        context.publishEvent(new ApplicationReadyEvent(this.application, this.args, context));
+    }
 }
 ```
 
