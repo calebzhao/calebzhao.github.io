@@ -986,7 +986,7 @@ public class DefaultFormattingConversionService extends FormattingConversionServ
 
 #### 3.6.2.2、将命令行的属性添加到Environment中
 
-```configurePropertySources```方法源码如下：
+`configurePropertySources`方法源码如下：
 
 
 ```java
