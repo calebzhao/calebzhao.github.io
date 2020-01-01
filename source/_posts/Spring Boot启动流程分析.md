@@ -1166,6 +1166,7 @@ class SpringApplicationRunListeners {
 `SpringApplicationRunListener`的实现类只有`EventPublishingRunListener`，EventPublishingRunListener类的`environmentPrepared`方法的源码如下：
 
 
+
 ```java
 public class EventPublishingRunListener implements SpringApplicationRunListener, Ordered {
 
@@ -1860,6 +1861,7 @@ class SpringApplicationRunListeners {
 `SpringApplicationRunListener`的实现类只有`EventPublishingRunListener`，started源码如下：
 
 
+
 ```java
 public class EventPublishingRunListener implements SpringApplicationRunListener, Ordered {
     private final SpringApplication application;
@@ -1954,7 +1956,6 @@ class SpringApplicationRunListeners {
 ```
 
 `SpringApplicationRunListener`的实现类只有`EventPublishingRunListener`，running源码如下：
-
 
 ```java
 public class EventPublishingRunListener implements SpringApplicationRunListener, Ordered {
