@@ -35,7 +35,7 @@ public @interface EnableFeignClients {
 	Class<?>[] clients() default {};
 }
 ```
-```@EnableFeignClients```的参数声明客户端接口的位置和默认的配置类。
+`@EnableFeignClients`的参数声明客户端接口的位置和默认的配置类。
 
 ## 2.2、@FeignClient注解，将接口声明为Feign客户端
 ```java
@@ -95,7 +95,8 @@ public @interface FeignClient {
 
 ## 2.3、FeignClientsRegistrar 注册客户端
 
-```@EnableFeignClients```注解上被注解了```@Import(FeignClientsRegistrar.class)```，```@Import```注解的作用是将指定的类作为Bean注入到Spring Context中，我们再来看被引入的```FeignClientsRegistrar```
+`@EnableFeignClients`注解上被注解了`@Import(FeignClientsRegistrar.class)`，`@Import`注解的作用是将指定的类作为Bean注入到Spring Context中，我们再来看被引入的`FeignClientsRegistrar`
+
 ```java
 class FeignClientsRegistrar implements ImportBeanDefinitionRegistrar, ResourceLoaderAware, EnvironmentAware {
 	
@@ -116,12 +117,12 @@ class FeignClientsRegistrar implements ImportBeanDefinitionRegistrar, ResourceLo
 }
 ```
 
-```FeignClientsRegistrar```类实现了3个接口:
-- 接口```ResourceLoaderAware```用于注入```ResourceLoader```
-- 接口```EnvironmentAware ```用于注入```Environment```
-- 接口```ImportBeanDefinitionRegistrar```用于动态向Spring Context中注册bean
+`FeignClientsRegistrar`类实现了3个接口:
+- 接口`ResourceLoaderAware`用于注入`ResourceLoader`
+- 接口`EnvironmentAware`用于注入`Environment`
+- 接口`ImportBeanDefinitionRegistrar`用于动态向Spring Context中注册bean
 
-```ImportBeanDefinitionRegistrar```接口方法```registerBeanDefinitions```有两个参数
+`ImportBeanDefinitionRegistrar`接口方法`registerBeanDefinitions`有两个参数
 - AnnotationMetadata 包含被@Import注解类的信息
 - BeanDefinitionRegistry bean定义注册中心
 
@@ -151,19 +152,20 @@ private void registerDefaultConfiguration(AnnotationMetadata metadata, BeanDefin
 }
 ```
 
-取出```@EnableFeignClients```注解的参数```defaultConfiguration```，动态注册到spring Context中。  
+取出`@EnableFeignClients`注解的参数`defaultConfiguration`，动态注册到spring Context中。  
 
 ## 2.5、registerClientConfiguration 注册configuration
 
 该方法用于注册feign配置，配置来源有2种：
-- 1. ```@EnableFeignClients```注解的```defaultConfiguration```属性注册时（全局默认配置），name为default.xxx
-- 2. ```@FeignClient```注解的```configuration```属性注册时（服务私有配置），name为contextId、name、value属性的值
+- 1. `@EnableFeignClients`注解的`defaultConfiguration`属性注册时（全局默认配置），name为default.xxx
+- 2. `@FeignClient`注解的`configuration`属性注册时（服务私有配置），name为contextId、name、value属性的值
 
 有2个地方会调用该方法：
-- ```FeignClientsRegistrar.registerDefaultConfiguration()```
--  ```FeignClientsRegistrar.registerFeignClients()```
+- `FeignClientsRegistrar.registerDefaultConfiguration()`
+-  `FeignClientsRegistrar.registerFeignClients()`
 
 **registerClientConfiguration** 方法源码如下：
+
 ```java
 private void registerClientConfiguration(BeanDefinitionRegistry registry, Object name, Object configuration) {
 	// 创建一个BeanDefinitionBuilder，注册bean的类为FeignClientSpecification
@@ -179,10 +181,11 @@ private void registerClientConfiguration(BeanDefinitionRegistry registry, Object
 	registry.registerBeanDefinition(name + "." + FeignClientSpecification.class.getSimpleName(), builder.getBeanDefinition());
 }
 ```
-这里使用spring 动态注册bean的方式，注册了一个```FeignClientSpecification```的bean。
+这里使用spring 动态注册bean的方式，注册了一个`FeignClientSpecification`的bean。
 
 ## 2.6、FeignClientSpecification 客户端定义
-一个简单的pojo，继承了```NamedContextFactory.Specification```，两个属性```String name``` 和 ```Class<?>[] configuration```，用于```FeignContext```命名空间独立配置，后面会用到。
+一个简单的pojo，继承了`NamedContextFactory.Specification`，两个属性`String name` 和 `Class<?>[] configuration`，用于`FeignContext`命名空间独立配置，后面会用到。
+
 ```java
 class FeignClientSpecification implements NamedContextFactory.Specification {
 
@@ -265,7 +268,7 @@ public void registerFeignClients(AnnotationMetadata metadata, BeanDefinitionRegi
 	}
 }
 ```
-这个方法主要逻辑是扫描注解声明的客户端(标有```@FeignClient```的接口)，调用```registerFeignClient```方法注册到registry中。**这里是一个典型的spring动态注册bean的例子，可以参考这段代码在spring中轻松的实现类路径下class扫描，动态注册bean到spring中**。想了解spring类的扫描机制，可以断点到```ClassPathScanningCandidateComponentProvider.findCandidateComponents```方法中，一步步调试。
+这个方法主要逻辑是扫描注解声明的客户端(标有`@FeignClient`的接口)，调用`registerFeignClient`方法注册到registry中。**这里是一个典型的spring动态注册bean的例子，可以参考这段代码在spring中轻松的实现类路径下class扫描，动态注册bean到spring中**。想了解spring类的扫描机制，可以断点到`ClassPathScanningCandidateComponentProvider.findCandidateComponents`方法中，一步步调试。
 
 ## 2.8、registerFeignClient方法，注册单个客户feign端bean
 ```java
@@ -382,9 +385,10 @@ static String getName(String name) {
 }
 ```
 
-```registerFeignClient```方法主要是将```FeignClientFactoryBean```工厂```Bean```注册到registry中，spring初始化后，会调用```FeignClientFactoryBean```的getObject方法创建bean注册到spring context中。
+`registerFeignClient`方法主要是将`FeignClientFactoryBean`工厂`Bean`注册到registry中，spring初始化后，会调用`FeignClientFactoryBean`的getObject方法创建bean注册到spring context中。
 
 ## 2.9、FeignClientFactoryBean 创建feign客户端的工厂
+
 ```java
 class FeignClientFactoryBean implements FactoryBean<Object>, InitializingBean, ApplicationContextAware {
 	private Class<?> type;
@@ -408,7 +412,7 @@ class FeignClientFactoryBean implements FactoryBean<Object>, InitializingBean, A
 	...省略部分代码
 }
 ```
-```FeignClientFactoryBean```实现了```FactoryBean```接口，是一个工厂bean
+`FeignClientFactoryBean`实现了`FactoryBean`接口，是一个工厂bean
 
 ![](https://cdn.jsdelivr.net/gh/calebzhao/cdn/img/20191229142123.png
 
@@ -466,13 +470,14 @@ public Object getObject() throws Exception {
 	return (T) targeter.target(this, builder, context, new HardCodedTarget<>(this.type, this.name, url));
 }
 ```
+
 这段代码有个比较重要的逻辑，如果在```@FeignClient```注解中设置了url参数，就不走Ribbon，直接url调用，否则通过Ribbon调用，实现客户端负载均衡。
 
-可以看到，生成Feign客户端所需要的各种配置对象，都是通过```FeignContex```中获取的。
+可以看到，生成Feign客户端所需要的各种配置对象，都是通过`FeignContex`中获取的。
 
 ### 2.9.2、FeignContext 隔离配置
 
-在```@FeignClient```注解参数```configuration```，指定的类是Spring的Configuration Bean，里面方法上加```@Bean```注解实现Bean的注入，可以指定feign客户端的各种配置，包括```Encoder/Decoder/Contract/Feign.Builder```等。**不同的客户端指定不同配置类，就需要对配置类进行隔离**，```FeignContext```就是用于隔离配置的。
+在`@FeignClient`注解参数`configuration`，指定的类是Spring的Configuration Bean，里面方法上加`@Bean`注解实现Bean的注入，可以指定feign客户端的各种配置，包括`Encoder/Decoder/Contract/Feign.Builder`等。**不同的客户端指定不同配置类，就需要对配置类进行隔离**，`FeignContext`就是用于隔离配置的。
 
 ```java
 public class FeignContext extends NamedContextFactory<FeignClientSpecification> {
@@ -481,8 +486,8 @@ public class FeignContext extends NamedContextFactory<FeignClientSpecification> 
 	}
 }
 ```
-```FeignContext```继承```NamedContextFactory```，空参数构造函数指定```FeignClientsConfiguration```类为默认配置。
-```NamedContextFactory```实现接口```ApplicationContextAware```，注入```ApplicationContextAware```作为parent：
+`FeignContext`继承`NamedContextFactory`，空参数构造函数指定`FeignClientsConfiguration`类为默认配置。
+`NamedContextFactory`实现接口`ApplicationContextAware`，注入`ApplicationContextAware`作为parent：
 
 ```java
 /**
@@ -588,14 +593,15 @@ public abstract class NamedContextFactory<C extends NamedContextFactory.Specific
 }
 ```
 
-关键的方法是```createContext```，为每个命名空间独立创建的```ApplicationContext```，设置parent为外部传入的Context，这样就可以共用外部的Context中的Bean，又有各种独立的配置Bean，熟悉springMVC的同学应该知道，springMVC中创建的```WebApplicatonContext```里面也有个parent，原理跟这个类似。
+关键的方法是`createContext`，为每个命名空间独立创建的`ApplicationContext`，设置parent为外部传入的Context，这样就可以共用外部的Context中的Bean，又有各种独立的配置Bean，熟悉springMVC的同学应该知道，springMVC中创建的`WebApplicatonContext`里面也有个parent，原理跟这个类似。
 
-从```FeignContext```中获取Bean，需要传入命名空间，根据命名空间找到缓存中的```ApplicationContext```，先从自己注册的```Bean```中获取bean，没有获取到再从到parent中获取。
+从`FeignContext`中获取Bean，需要传入命名空间，根据命名空间找到缓存中的`ApplicationContext`，先从自己注册的`Bean`中获取bean，没有获取到再从到parent中获取。
 
 ### 2.9.3、创建Feign.Builder
-了解了```FeignContext```的原理，我们再来看feign最重要的构建类创建过程
+了解了`FeignContext`的原理，我们再来看feign最重要的构建类创建过程
 
-在```FeignClientFactoryBean```的```getTarget```方法中调用了```feign()```方法返回了```Feign.Builder```对象：
+在`FeignClientFactoryBean`的`getTarget`方法中调用了`feign()`方法返回了`Feign.Builder`对象：
+
 ```java
 class FeignClientFactoryBean
 	implements FactoryBean<Object>, InitializingBean, ApplicationContextAware {
@@ -720,7 +726,7 @@ class FeignClientFactoryBean
 }
 ```
 
-feign()方法设置了```Feign.Builder```所必须的参数``Encoder```/```Decoder```/```Contract```，其他参数都是可选的。这三个必须的参数从哪里来的呢？答案是在```FeignContext```的构造器中，传入了默认的配置```FeignClientsConfiguration```，这个配置类里面初始化了这三个参数。
+feign()方法设置了`Feign.Builder`所必须的参数`Encoder`/`Decoder`/`Contract`，其他参数都是可选的。这三个必须的参数从哪里来的呢？答案是在`FeignContext`的构造器中，传入了默认的配置`FeignClientsConfiguration`，这个配置类里面初始化了这三个参数。
 
 ```java
 @Configuration(proxyBeanMethods = false)
@@ -837,13 +843,13 @@ public class FeignClientsConfiguration {
 }
 ```
 
-可以看到，feign需要的decoder/enoder通过适配器共用springMVC中的```HttpMessageConverters```引入。
+可以看到，feign需要的decoder/enoder通过适配器共用springMVC中的`HttpMessageConverters`引入。
 
-feign有自己的注解体系，这里通过```SpringMvcContract```适配了springMVC的注解体系。
+feign有自己的注解体系，这里通过`SpringMvcContract`适配了springMVC的注解体系。
 
 ### 2.9.4、SpringMvcContract 适配feign注解体系
 
-SpringMvcContract继承了feign的类```Contract.BaseContract```，作用是解析接口方法上的注解和方法参数，生成```MethodMetadata```用于接口方法调用过程中组装http请求。
+SpringMvcContract继承了feign的类`Contract.BaseContract`，作用是解析接口方法上的注解和方法参数，生成`MethodMetadata`用于接口方法调用过程中组装http请求。
 ```java
 public class SpringMvcContract extends Contract.BaseContract implements ResourceLoaderAware {
 	
@@ -906,13 +912,14 @@ public class SpringMvcContract extends Contract.BaseContract implements Resource
 	}
 }
 ```
-几个覆盖方法分别是处理类上的注解，处理方法，处理方法上的注解，处理方法参数注解，最终生成完整的```MethodMetadata```。feign自己提供的Contract和扩展javax.ws.rx的Contract原理都是类似的。
+几个覆盖方法分别是处理类上的注解，处理方法，处理方法上的注解，处理方法参数注解，最终生成完整的`MethodMetadata`。feign自己提供的Contract和扩展javax.ws.rx的Contract原理都是类似的。
 
 
 ## 2.9.5、FeignAutoConfiguration
-```Feign.Builder```生成后，就要用Target生成feign客户端的动态代理，这里```FeignClientFactoryBean```中使用```Targeter```，Targeter有两个实现类，分别是```HystrixTargeter```和```DefaultTargeter```，那么默认的Targeter又是怎么来的呢？
+`Feign.Builder`生成后，就要用Target生成feign客户端的动态代理，这里`FeignClientFactoryBean`中使用`Targeter`，Targeter有两个实现类，分别是`HystrixTargeter`和`DefaultTargeter`，那么默认的Targeter又是怎么来的呢？
 
-在spring-cloud-openfeign-core项目的```META-INF\spring.factories```文件中有```FeignAutoConfiguration```的自动化配置，关于spring.factories自动化配置的原理见[springboot2.2自动注入文件spring.factories如何加载详解](https://my.oschina.net/zhaopeng2012/blog/3144983 "springboot2.2自动注入文件spring.factories如何加载详解")
+在spring-cloud-openfeign-core项目的`META-INF\spring.factories`文件中有`FeignAutoConfiguration`的自动化配置，关于spring.factories自动化配置的原理见[springboot2.2自动注入文件spring.factories如何加载详解](https://my.oschina.net/zhaopeng2012/blog/3144983 "springboot2.2自动注入文件spring.factories如何加载详解")
+
 - **spring.factories**
 ```peoperties
 org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
@@ -1046,14 +1053,15 @@ public class FeignAutoConfiguration {
 
 - **@FeignClient配置隔离体系总结**
 
-需要注意的是```FeignAutoConfiguration```中的bean都是默认的全局配置， 而每个```@FeignClient```都可以有其私有的configuration属性配置，在```FeignClientFactoryBean.feign()```方法中创建```Feign.builder().enocder(xx).decoder(xxx).targeter()```时调用的
-```get(context, xx.class)```方法都是先从自身命名空间上下文中找bean（私有配置），如果找不到会从父上下文中找bean使用全局配置, 这就是为什么```@FeignClient的configuration```属性可以没有的原因。
+需要注意的是`FeignAutoConfiguration`中的bean都是默认的全局配置， 而每个`@FeignClient`都可以有其私有的configuration属性配置，在`FeignClientFactoryBean.feign()`方法中创建`Feign.builder().enocder(xx).decoder(xxx).targeter()`时调用的
+`get(context, xx.class)`方法都是先从自身命名空间上下文中找bean（私有配置），如果找不到会从父上下文中找bean使用全局配置, 这就是为什么`@FeignClient的configuration`属性可以没有的原因。
 
 
 ### 2.9.6、Targeter 生成接口动态代理
 - **DefaultTargeter**
 
-```DefaultTargeter```很简单，直接调用```HardCodedTarget```生成动态代理，```HystrixTargeter```源码如下：
+`DefaultTargeter`很简单，直接调用`HardCodedTarget`生成动态代理，`HystrixTargeter`源码如下：
+
 ```java
 class DefaultTargeter implements Targeter {
 
@@ -1284,7 +1292,8 @@ final class HystrixInvocationHandler implements InvocationHandler {
 
 ## 3、loadBalance方法，客户端负载均衡
 ### 3.1、loadBalance方法的调用
-如果```@FeignClient```注解中没有配置url参数，将会通过```loadBalance```方法生成Ribbon的动态代理：
+如果`@FeignClient`注解中没有配置url参数，将会通过`loadBalance`方法生成Ribbon的动态代理：
+
 ```java
 class FeignClientFactoryBean
 	implements FactoryBean<Object>, InitializingBean, ApplicationContextAware {
@@ -1342,7 +1351,7 @@ class FeignClientFactoryBean
 
 ### 3.2、FeignRibbonClientAutoConfiguration
 
-之前我们我们已经分析过在spring-cloud-openfeign-core项目的```META-INF\spring.factories```文件中有```FeignAutoConfiguration```的自动化配置，这里我们可以看到```spring.factories```文件里面还有个```FeignRibbonClientAutoConfiguration```自动化配置类，从名称就可以知道它与负载均衡相关。
+之前我们我们已经分析过在spring-cloud-openfeign-core项目的`META-INF\spring.factories`文件中有`FeignAutoConfiguration`的自动化配置，这里我们可以看到`spring.factories`文件里面还有个`FeignRibbonClientAutoConfiguration`自动化配置类，从名称就可以知道它与负载均衡相关。
 
 - **spring.factories**
 ```peoperties
@@ -1574,9 +1583,9 @@ public abstract class AbstractLoadBalancerAwareClient<S extends ClientRequest, T
 
 注意
 **@AutoConfigureAfter(FeignRibbonClientAutoConfiguration.class)**
-这个自动化配置条件，表明这个类的自动化配置在```FeignRibbonClientAutoConfiguration```之后才执行，回顾上面的
-```FeignRibbonClientAutoConfiguration```的执行流程可以知道，当启用ribbon时，```FeignRibbonClientAutoConfiguration```引入的3个类
-```HttpClientFeignLoadBalancedConfiguration```、```OkHttpFeignLoadBalancedConfiguration```、```DefaultFeignLoadBalancedConfiguration```本身会创建Feign的```Client```接口的实现```LoadBalancerFeignClient```，所以由```FeignLoadBalancerAutoConfiguration```自动化配置的```FeignBlockingLoadBalancerClient```不会被创建，因为```Client```接口`的实现已经由```FeignRibbonClientAutoConfiguration```的自动化配置创建好了```LoadBalancerFeignClient```。
+这个自动化配置条件，表明这个类的自动化配置在`FeignRibbonClientAutoConfiguration`之后才执行，回顾上面的
+`FeignRibbonClientAutoConfiguration`的执行流程可以知道，当启用ribbon时，`FeignRibbonClientAutoConfiguration`引入的3个类
+`HttpClientFeignLoadBalancedConfiguration`、`OkHttpFeignLoadBalancedConfiguration`、`DefaultFeignLoadBalancedConfiguration`本身会创建Feign的`Client`接口的实现`LoadBalancerFeignClient`，所以由`FeignLoadBalancerAutoConfiguration`自动化配置的`FeignBlockingLoadBalancerClient`不会被创建，因为`Client`接口`的实现已经由`FeignRibbonClientAutoConfiguration`的自动化配置创建好了`LoadBalancerFeignClient`。
 
 **下面的源码分析建立在spring.cloud.loadbalancer.ribbon.enabled=false的情况下进行分析的**
 
@@ -1637,7 +1646,7 @@ class OkHttpFeignLoadBalancerConfiguration {
 }
 ```
 
-可以看到无论是```DefaultFeignLoadBalancerConfiguration```还是```OkHttpFeignLoadBalancerConfiguration```都是使用```FeignBlockingLoadBalancerClient```，传入了具体http请求的实现，可以知道具体的负载均衡功能是由```FeignBlockingLoadBalancerClient```实现的
+可以看到无论是`DefaultFeignLoadBalancerConfiguration`还是`OkHttpFeignLoadBalancerConfiguration`都是使用`FeignBlockingLoadBalancerClient`，传入了具体http请求的实现，可以知道具体的负载均衡功能是由`FeignBlockingLoadBalancerClient`实现的
 
 - FeignBlockingLoadBalancerClient
 ```java
