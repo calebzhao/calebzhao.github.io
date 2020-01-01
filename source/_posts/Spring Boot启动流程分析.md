@@ -1681,7 +1681,7 @@ spring```org.springframework.context.ApplicationContextInitializer```的实现�
 listeners.contextPrepared(context);
 ```
 
-```SpringApplicationRunListeners```类的contextPrepared方法源码如下：
+`SpringApplicationRunListeners`类的contextPrepared方法源码如下：
 
 
 ```java
@@ -1699,7 +1699,7 @@ class SpringApplicationRunListeners {
 }
 ```
 
-```SpringApplicationRunListener```的实现类只有```EventPublishingRunListener```，contextPrepared方法的源码如下：
+`SpringApplicationRunListener`的实现类只有`EventPublishingRunListener`，contextPrepared方法的源码如下：
 
 
 ```java
