@@ -1,7 +1,11 @@
+---
 title: Spring Boot启动流程分析
 date: 2019-12-30 08:22:37
 tags: spring boot
 categories: spring boot
+---
+
+> 有道无术,术可求;有术无道,止于术
 
 # 1、前言
 
@@ -1166,6 +1170,7 @@ class SpringApplicationRunListeners {
 `SpringApplicationRunListener`的实现类只有`EventPublishingRunListener`，EventPublishingRunListener类的`environmentPrepared`方法的源码如下：
 
 
+
 ```java
 public class EventPublishingRunListener implements SpringApplicationRunListener, Ordered {
 
@@ -1860,6 +1865,7 @@ class SpringApplicationRunListeners {
 `SpringApplicationRunListener`的实现类只有`EventPublishingRunListener`，started源码如下：
 
 
+
 ```java
 public class EventPublishingRunListener implements SpringApplicationRunListener, Ordered {
     private final SpringApplication application;
@@ -1954,7 +1960,6 @@ class SpringApplicationRunListeners {
 ```
 
 `SpringApplicationRunListener`的实现类只有`EventPublishingRunListener`，running源码如下：
-
 
 ```java
 public class EventPublishingRunListener implements SpringApplicationRunListener, Ordered {
