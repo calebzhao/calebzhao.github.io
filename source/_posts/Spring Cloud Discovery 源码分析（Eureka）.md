@@ -5,10 +5,11 @@ tags: spring cloud
 categories: spring cloud
 ---
 
+
 我们在将一个普通的Spring Boot应用注册到Eureka Server中，或是从Eureka Server中获取服务列表时，主要就做了两件事：
 
 - 在应用主类he中配置了```@EnableDiscoveryClient```注解  
--  在```application.properties```中用```eureka.client.serviceUrl.defaultZone```参数指定了服务注册中心的位置  
+-  在`application.properties`中用`eureka.client.serviceUrl.defaultZone`参数指定了服务注册中心的位置  
 
 顺着上面的线索，我们先查看具体实现:
 - **@EnableDiscoveryClient的源码如下:**
@@ -32,7 +33,7 @@ public @interface EnableDiscoveryClient {
 
 }
 ```
-```@EnableDiscoveryClient```注解的作用主要是用来引入```EnableDiscoveryClientImportSelector```这个类
+`@EnableDiscoveryClient`注解的作用主要是用来引入`EnableDiscoveryClientImportSelector`这个类
 
 
 - **EnableDiscoveryClientImportSelector的源码：**
@@ -88,7 +89,7 @@ public class EnableDiscoveryClientImportSelector
 
 }
 ```
-```EnableDiscoveryClientImportSelector```继承了```SpringFactoryImportSelector```并指定了泛型```EnableDiscoveryClient```. 这里的泛型是重点.
+`EnableDiscoveryClientImportSelector`继承了`SpringFactoryImportSelector`并指定了泛型`EnableDiscoveryClient`. 这里的泛型是重点.
 
 - **SpringFactoryImportSelector源码**
 ```java
@@ -152,7 +153,7 @@ public abstract class SpringFactoryImportSelector<T>
 	...省略
 }
 ```
-这里只截取了部分变量和方法， ```SpringFactoryImportSelector```是spring cloud common包中的一个抽象类, 主要作用是检查泛型T是否有指定的factory实现, 即```spring.factories```中有对应类的配置并启动自动化配置（由```SpringFactoriesLoader```加载并解析```spring.factories```文件, 具体加载原理见[springboot2.2自动注入文件spring.factories如何加载详解](https://my.oschina.net/zhaopeng2012/blog/3144983 "springboot2.2自动注入文件spring.factories如何加载详解")）
+这里只截取了部分变量和方法， `SpringFactoryImportSelector`是spring cloud common包中的一个抽象类, 主要作用是检查泛型T是否有指定的factory实现, 即`spring.factories`中有对应类的配置并启动自动化配置（由`SpringFactoriesLoader`加载并解析`spring.factories`文件, 具体加载原理见[springboot2.2自动注入文件spring.factories如何加载详解](https://my.oschina.net/zhaopeng2012/blog/3144983 "springboot2.2自动注入文件spring.factories如何加载详解")）
 
 - **spring.factories**
 
@@ -170,9 +171,9 @@ org.springframework.cloud.bootstrap.BootstrapConfiguration=\
 org.springframework.cloud.netflix.eureka.config.EurekaDiscoveryClientConfigServiceBootstrapConfiguration
 ```
 
-```EnableAutoConfiguration```中包含了```EurekaClientAutoConfiguration```, ```EurekaClientAutoConfiguration```会为```EurekaDiscoveryClientConfiguration```的实例依赖进行初始化。
+`EnableAutoConfiguration`中包含了`EurekaClientAutoConfiguration`, `EurekaClientAutoConfiguration`会为```EurekaDiscoveryClientConfiguration`的实例依赖进行初始化。
 
-下面对```spring.factories```中的eureka自动化配置一个个分析源码：
+下面对`spring.factories`中的eureka自动化配置一个个分析源码：
 - **EurekaClientConfigServerAutoConfiguration 配置服务器自动化配置**
 ```java
 @Configuration(proxyBeanMethods = false)
@@ -202,7 +203,7 @@ public class EurekaClientConfigServerAutoConfiguration {
 }
 ```
 
-从源码看到注入了```EurekaInstanceConfig instance```配置，```EurekaInstanceConfig```这个bean是在```org.springframework.cloud.netflix.eureka.EurekaClientAutoConfiguration#eurekaInstanceConfigBean()```中创建的， 另外 init()方法上有```@PostConstruct```注解，说明在创建这个bean后执行了init()方法， 方法内部获取```ConfigServerProperties``` 中的prefix, 如果```eureka.instance.metadata.configPath```没有配置，则使用prefix的值。
+从源码看到注入了`EurekaInstanceConfig instance`配置，`EurekaInstanceConfig`这个bean是在`org.springframework.cloud.netflix.eureka.EurekaClientAutoConfiguration#eurekaInstanceConfigBean()`中创建的， 另外 init()方法上有`@PostConstruct`注解，说明在创建这个bean后执行了init()方法， 方法内部获取`ConfigServerProperties` 中的prefix, 如果`eureka.instance.metadata.configPath`没有配置，则使用prefix的值。
 
 
 - **EurekaClientAutoConfiguration 客户端自动化配置**
@@ -394,10 +395,10 @@ public class EurekaClientAutoConfiguration {
 
 
 - **EurekaInstanceConfigBean 实例配置信息**  
-实例化```eureka.instance```为前缀的配置信息```EurekaInstanceConfigBean```(实现了```EurekaInstanceConfig```)
+实例化`eureka.instance`为前缀的配置信息`EurekaInstanceConfigBean`(实现了`EurekaInstanceConfig`)
 
 
-用户承载eureka.instance配置信息的```EurekaInstanceConfigBean```类的源码如下：
+用户承载eureka.instance配置信息的`EurekaInstanceConfigBean`类的源码如下：
 ```
 import static org.springframework.cloud.commons.util.IdUtils.getDefaultInstanceId;
 
@@ -480,7 +481,7 @@ public class EurekaInstanceConfigBean implements CloudEurekaInstanceConfig, Envi
 }
 
 ```
-从EurekaInstanceConfigBean的构造方法中可以看到它接收1个参数```InetUtils```,  ```this.hostInfo = this.inetUtils.findFirstNonLoopbackHostInfo();```这行代码使用传入的InetUtils获取主机信息， 接下来分析InetUtils网络工具类源码。
+从EurekaInstanceConfigBean的构造方法中可以看到它接收1个参数`InetUtils`,  `this.hostInfo = this.inetUtils.findFirstNonLoopbackHostInfo();`这行代码使用传入的InetUtils获取主机信息， 接下来分析InetUtils网络工具类源码。
 - **InetUtils网络工具类**
 ```
 public class InetUtils implements Closeable {
@@ -555,7 +556,7 @@ public class InetUtils implements Closeable {
 }
 ```
 
-```org.springframework.cloud.netflix.eureka.EurekaClientAutoConfiguration#eurekaInstanceConfigBean```方法中获取```EurekaInstanceConfigBean```实例时设置了实例id(```instance.setInstanceId(getDefaultInstanceId(env));```)中的```getDefaultInstanceId()```方法是```IdUtils```类中的方法，这里的```getDefaultInstanceId()```方法是静态导入的，所以没有看到通过Class.methods()这种形式调用，```IdUtils```的实现源码如下：
+`org.springframework.cloud.netflix.eureka.EurekaClientAutoConfiguration#eurekaInstanceConfigBean`方法中获取`EurekaInstanceConfigBean`实例时设置了实例id(`instance.setInstanceId(getDefaultInstanceId(env));`)中的`getDefaultInstanceId()`方法是`IdUtils`类中的方法，这里的`getDefaultInstanceId()`方法是静态导入的，所以没有看到通过Class.methods()这种形式调用，`IdUtils`的实现源码如下：
 
 - **IdUtils 实例id工具类**
 ```java
@@ -856,7 +857,7 @@ eureka:
 - **EurekaClient**  
 以下图片来自Netflix官方，图中显示Eureka Client会向注册中心发起Get Registry请求来获取服务列表：
 ![](https://oscimg.oschina.net/oscnet/up-3ba973845dacb74c2edf4b188caf17e14d1.png)
-在```org.springframework.cloud.netflix.eureka.EurekaClientAutoConfiguration```中实例化了该bean, 源码如下：
+在`org.springframework.cloud.netflix.eureka.EurekaClientAutoConfiguration`中实例化了该bean, 源码如下：
 ```
 public class EurekaClientAutoConfiguration{
 
@@ -889,7 +890,7 @@ public class EurekaClientAutoConfiguration{
 	}
 ```
 
-下面看```EurekaClient```这个类的源码，注意重点是该类的**构造方法创建了一系列的定时任务（心跳、更新服务注册信息、根据dns更新serviceUrl、注册实例信息到eurekaserver）以及注册了事件监听器StatusChangeListener用于监听实例自身状态变化，当发生变化时上报服务实例信息到eureka server**
+下面看`EurekaClient`这个类的源码，注意重点是该类的**构造方法创建了一系列的定时任务（心跳、更新服务注册信息、根据dns更新serviceUrl、注册实例信息到eurekaserver）以及注册了事件监听器StatusChangeListener用于监听实例自身状态变化，当发生变化时上报服务实例信息到eureka server**
 
 该类的继承关系如下：  
 ![](https://oscimg.oschina.net/oscnet/up-b975a3a81fb408329867b2d1795f4061061.png)
@@ -1427,7 +1428,7 @@ public class EurekaDiscoveryClientConfiguration {
 
 - **EurekaRegistration 实例信息， Registration的实现**
 
-实现了spring cloud commons项目中的```Registration```接口，代表要注册的实例信息
+实现了spring cloud commons项目中的`Registration`接口，代表要注册的实例信息
 ```java
 public class EurekaRegistration implements Registration {
 	private final EurekaClient eurekaClient;
@@ -1506,18 +1507,18 @@ public class EurekaRegistration implements Registration {
 ```
 
 # 总结spring-cloud-nextflix-eureka-client启动流程：
-1.  ```@EnableDiscoveryClient```引入```EnableDiscoveryClientImportSelector```
-2. ```spring-cloud-netflix-eureka-client-2.2.0.RELEASE.jar!\META-INF\spring.factories```中会自动化配置```EurekaClientConfigServerAutoConfiguration```、```EurekaDiscoveryClientConfigServiceAutoConfiguration```、```EurekaClientAutoConfiguration```、```EurekaDiscoveryClientConfiguration```、```RibbonEurekaAutoConfiguration```等几个类
-3. ```EurekaClientAutoConfiguration```   会实例化如下几个类：
-- ```EurekaInstanceConfigBean```   
+1.  `@EnableDiscoveryClient`引入`EnableDiscoveryClientImportSelector`
+2. `spring-cloud-netflix-eureka-client-2.2.0.RELEASE.jar!\META-INF\spring.factories`中会自动化配置`EurekaClientConfigServerAutoConfiguration`、`EurekaDiscoveryClientConfigServiceAutoConfiguration`、`EurekaClientAutoConfiguration`、`EurekaDiscoveryClientConfiguration`、`RibbonEurekaAutoConfiguration`等几个类
+3. `EurekaClientAutoConfiguration`   会实例化如下几个类：
+- `EurekaInstanceConfigBean`   
 读取application.yml中eureka.instance为前缀的配置
-- ```EurekaServiceRegistry```   
+- `EurekaServiceRegistry`   
 spring cloud commons项目ServiceRegisity接口的实现
-- ```EurekaAutoServiceRegistration```   
+- `EurekaAutoServiceRegistration`   
 spring cloud commons项目AutoServiceRegistration接口的实现
-- ```EurekaClient```   
+- `EurekaClient`   
 netfliex的服务发现、服务注册、心跳实现，**构造方法**中会发送第一次rest请求，全量获取所有服务注册信息，然后启动一系列定时任务（心跳、刷新服务发现信息、实例状态变化时注册注册实例信息）
-- ```ApplicationInfoManager```
+- `ApplicationInfoManager`
 持有实例信息
-- ```EurekaRegistration```
+- `EurekaRegistration`
 spring cloud commons项目Registration接口的实现
