@@ -30,38 +30,38 @@ public class ClientApplication {
 
 ```java
 public class SpringApplication {
-    
+
     public SpringApplication(Class<?>... primarySources) {
-            this(null, primarySources);
+        this(null, primarySources);
     }
-    
+
     public SpringApplication(ResourceLoader resourceLoader, Class<?>... primarySources) {
         // 2.1、赋值资源加载器
-		this.resourceLoader = resourceLoader;
+        this.resourceLoader = resourceLoader;
         // 2.2、断言主要加载资源类不能为 null，否则报错
-		Assert.notNull(primarySources, "PrimarySources must not be null");
+        Assert.notNull(primarySources, "PrimarySources must not be null");
         // 2.3、初始化主要加载资源类集合并去重
-		this.primarySources = new LinkedHashSet<>(Arrays.asList(primarySources));
+        this.primarySources = new LinkedHashSet<>(Arrays.asList(primarySources));
         // 2.4、推断当前应用类型是servlet环境、reactive反应式环境、标准环境
-		this.webApplicationType = WebApplicationType.deduceFromClasspath();
-       
+        this.webApplicationType = WebApplicationType.deduceFromClasspath();
+
         // 2.5、关键代码：加载classpath下META-INF/spring.factories中key为ApplicationContextInitializer的自动化配置类的名称
-		setInitializers((Collection) getSpringFactoriesInstances(ApplicationContextInitializer.class));
-        
-       // 2.6、关键代码：加载classpath下META-INF/spring.factories中key为ApplicationListener的自动化配置类的名称
-		setListeners((Collection) getSpringFactoriesInstances(ApplicationListener.class));
-        
+        setInitializers((Collection) getSpringFactoriesInstances(ApplicationContextInitializer.class));
+
+        // 2.6、关键代码：加载classpath下META-INF/spring.factories中key为ApplicationListener的自动化配置类的名称
+        setListeners((Collection) getSpringFactoriesInstances(ApplicationListener.class));
+
         //2.7、推断main方法所在的类
-		this.mainApplicationClass = deduceMainApplicationClass();
-	}
+        this.mainApplicationClass = deduceMainApplicationClass();
+    }
 
     // 这个方法就是SpringApplication.run(ClientApplication.class, args);这段代码调用的方法
     public static ConfigurableApplicationContext run(Class<?> primarySource, String... args) {
-            return run(new Class<?>[] { primarySource }, args);
+        return run(new Class<?>[] { primarySource }, args);
     }
 
     public static ConfigurableApplicationContext run(Class<?>[] primarySources, String[] args) {
-            return new SpringApplication(primarySources).run(args);
+        return new SpringApplication(primarySources).run(args);
     }
 }
 ```
@@ -988,10 +988,10 @@ public class DefaultFormattingConversionService extends FormattingConversionServ
 public class SpringApplication {
 
 
-    ...省略代码
+    // ...省略代码
 
-        // 是否添加命令行参数到ConfigurableEnvironment中
-        private boolean addCommandLineProperties = true;
+    // 是否添加命令行参数到ConfigurableEnvironment中
+    private boolean addCommandLineProperties = true;
 
     // 默认属性，如果有则会合并到ConfigurableEnvironment中
     private Map<String, Object> defaultProperties;
@@ -1012,15 +1012,15 @@ public class SpringApplication {
         configureProfiles(environment, args);
     }
 
-    ...省略部分代码
+    // ...省略部分代码
 
-        /**
+    /**
     * 创建一个基于命令行属性的PropertySource并将其添加到ConfigurableEnvironment中
     *
     * @param environment 环境对象，根据应用类型可能是StandardEnvironment、StandardServletEnvironment、StandardReactiveWebEnvironment
     * @param args 要被添加的命令行参数数据，如 ['--server.port=9090', '--spring.profiles.active=prod']
     */
-        protected void configurePropertySources(ConfigurableEnvironment environment, String[] args) {
+    protected void configurePropertySources(ConfigurableEnvironment environment, String[] args) {
         // 获得AbstractEnvironment中的propertySources属性，代表可变属性源，
         // MutablePropertySources类中包含addFirst、addBefore、addLast、remove、replace等操纵属性源的方法
         MutablePropertySources sources = environment.getPropertySources();
@@ -1106,7 +1106,8 @@ prepareEnvironment()方法的源码分析完了，现在让我们回到```public
 ConfigurationPropertySources.attach(environment);
 ```
 
-```ConfigurationPropertySources```类的静态方法```attach(Environment environment)```源码如下：
+`ConfigurationPropertySources`类的静态方法`attach(Environment environment)`源码如下：
+
 
 ```java
 public final class ConfigurationPropertySources {
@@ -1143,7 +1144,8 @@ public final class ConfigurationPropertySources {
 listeners.environmentPrepared(environment);
 ```
 
-```SpringApplicationRunListeners```类的```environmentPrepared```方法源码如下：
+`SpringApplicationRunListeners`类的`environmentPrepared`方法源码如下：
+
 
 ```java
 class SpringApplicationRunListeners {
@@ -1161,6 +1163,7 @@ class SpringApplicationRunListeners {
 ```
 
 ```SpringApplicationRunListener```的实现类只有```EventPublishingRunListener```，EventPublishingRunListener类的```environmentPrepared```方法的源码如下：
+
 
 ```java
 public class EventPublishingRunListener implements SpringApplicationRunListener, Ordered {
@@ -1674,6 +1677,7 @@ listeners.contextPrepared(context);
 
 ```SpringApplicationRunListeners```类的contextPrepared方法源码如下：
 
+
 ```java
 class SpringApplicationRunListeners {
 
@@ -1690,6 +1694,7 @@ class SpringApplicationRunListeners {
 ```
 
 ```SpringApplicationRunListener```的实现类只有```EventPublishingRunListener```，contextPrepared方法的源码如下：
+
 
 ```java
 public class EventPublishingRunListener implements SpringApplicationRunListener, Ordered {
@@ -1853,6 +1858,7 @@ class SpringApplicationRunListeners {
 
 ```SpringApplicationRunListener```的实现类只有```EventPublishingRunListener```，started源码如下：
 
+
 ```java
 public class EventPublishingRunListener implements SpringApplicationRunListener, Ordered {
     private final SpringApplication application;
@@ -1947,6 +1953,7 @@ class SpringApplicationRunListeners {
 ```
 
 ```SpringApplicationRunListener```的实现类只有```EventPublishingRunListener```，running源码如下：
+
 
 ```java
 public class EventPublishingRunListener implements SpringApplicationRunListener, Ordered {
