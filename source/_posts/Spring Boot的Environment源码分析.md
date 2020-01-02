@@ -355,6 +355,9 @@ public abstract class PropertySource<T> {
   
       // ...省略代码
   
+      // 在应用程序上下文创建时如果实际的属性源不能立即初始化（还没有属性），则应该使用该类作为一个属性源占位符，
+      // 例如，基于ServletContext的属性源必须等待，直到ServletContext对象对其封装的ApplicationContext可用。
+      // 在这种情况下，应该使用存根（Stub）来保存属性源的默认位置/顺序，然后在上下文刷新（refresh）期间替换存根。
       public static class StubPropertySource extends PropertySource<Object> {
   
           public StubPropertySource(String name) {
@@ -1030,11 +1033,14 @@ public class StandardServletEnvironment extends StandardEnvironment implements C
 * 参见org.springframework.web.jsf.el.SpringBeanFacesELResolver
 */
 public abstract class WebApplicationContextUtils {
+    
+    // 从给定的ServletContext获取默认名称的WebApplicationContext
     @Nullable
     public static WebApplicationContext getWebApplicationContext(ServletContext sc) {
         return getWebApplicationContext(sc, WebApplicationContext.ROOT_WEB_APPLICATION_CONTEXT_ATTRIBUTE);
     }
 
+    // 从给定的ServletContext获取指定名称的WebApplicationContext
     @Nullable
     public static WebApplicationContext getWebApplicationContext(ServletContext sc, String attrName) {
         Assert.notNull(sc, "ServletContext must not be null");
