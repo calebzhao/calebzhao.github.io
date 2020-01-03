@@ -776,13 +776,15 @@ private ConfigurableEnvironment prepareEnvironment(SpringApplicationRunListeners
     // 3.6.1、 获取（或者创建）应用ConfigurableEnvironment
     ConfigurableEnvironment environment = getOrCreateEnvironment();
 
-    // 3.6.2、 配置应用环境
+    // 3.6.2、 配置应用环境（启动参数绑定到ConfigurableEnvironment中、绑定ConfigurableConversionService到ConfigurableEnvironment中）
     configureEnvironment(environment, applicationArguments.getSourceArgs());
     // 3.6.3、
     ConfigurationPropertySources.attach(environment);
-    // 3.6.4、发布
+    // 3.6.4、发布ApplicationEnvironmentPreparedEvent事件
     listeners.environmentPrepared(environment);
+    // 3.6.5、绑定ConfigurableEnvironment到当前的SpringApplication实例中
     bindToSpringApplication(environment);
+    
     if (!this.isCustomEnvironment) {
         environment = new EnvironmentConverter(getClassLoader()).convertEnvironmentIfNecessary(environment,
                                                                                                deduceEnvironmentClass());
@@ -1105,7 +1107,7 @@ prepareEnvironment()方法的源码分析完了，现在让我们回到```public
 
 
 
-### 3.6.3、
+### 3.6.3、启动参数绑定到ConfigurableEnvironment中
 
 ```java
 ConfigurationPropertySources.attach(environment);
@@ -1186,6 +1188,27 @@ public class EventPublishingRunListener implements SpringApplicationRunListener,
             .multicastEvent(new ApplicationEnvironmentPreparedEvent(this.application, this.args, environment));
     }
 
+}
+```
+
+
+
+### 3.6.5、绑定ConfigurableEnvironment到当前的SpringApplication实例中
+
+```java
+bindToSpringApplication(environment);
+```
+
+bindToSpringApplication()方法的具体源码如下：
+
+```java
+protected void bindToSpringApplication(ConfigurableEnvironment environment) {
+    try {
+        Binder.get(environment).bind("spring.main", Bindable.ofInstance(this));
+    }
+    catch (Exception ex) {
+        throw new IllegalStateException("Cannot bind to SpringApplication", ex);
+    }
 }
 ```
 
@@ -1595,7 +1618,7 @@ public class SpringApplication {
 }
 ```
 
-### 3.11.3、applyInitializers
+### 3.11.3、回调ApplicationContextInitializer.initialize(context)
 
 ```java
 applyInitializers(context);
@@ -1788,7 +1811,7 @@ private void refreshContext(ConfigurableApplicationContext context) {
 
 
 
-## 3.13、应用上下文刷新后置处理
+## 3.13、ApplicationContext刷新后置处理
 
 ```java
 afterRefresh(context, applicationArguments);
@@ -1801,7 +1824,7 @@ protected void afterRefresh(ConfigurableApplicationContext context, ApplicationA
 }
 ```
 
-## 3.14、停止计时监控类
+## 3.14、停止StopWatch
 
 ```
 stopWatch.stop();
@@ -1837,7 +1860,7 @@ if (this.logStartupInfo) {
 
 
 
-## 3.16、发布应用上下文启动完成事件
+## 3.16、发布ApplicationStartedEvent事件
 
 ```java
 listeners.started(context);
@@ -1928,7 +1951,7 @@ private void callRunner(CommandLineRunner runner, ApplicationArguments args) {
 
 
 
-## 3.18、发布应用上下文就绪事件
+## 3.18、发布ApplicationReadyEvent事件
 
 ```
 try {

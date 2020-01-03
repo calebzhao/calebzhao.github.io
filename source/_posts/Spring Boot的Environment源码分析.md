@@ -264,38 +264,41 @@ public abstract class PropertySource<T> {
 
 源码相对简单，预留了一个`getProperty`抽象方法给子类实现，**重点需要关注的是重写了的`equals`和`hashCode`方法，实际上只和`name`属性相关，这一点很重要，说明一个PropertySource实例绑定到一个唯一的name，这个name有点像HashMap里面的key**，部分移除、判断方法都是基于name属性。`PropertySource`的最常用子类是`MapPropertySource`、`PropertiesPropertySource`、`ResourcePropertySource`、`StubPropertySource`、`ComparisonPropertySource`。
 
-- `MapPropertySource`：source指定为Map类型的`PropertySource`实现。
+### `MapPropertySource`
 
-  ```java
-  public class MapPropertySource extends EnumerablePropertySource<Map<String, Object>> {
-  
-      public MapPropertySource(String name, Map<String, Object> source) {
-          super(name, source);
-      }
-  
-  
-      @Override
-      @Nullable
-      public Object getProperty(String name) {
-          return this.source.get(name);
-      }
-  
-      @Override
-      public boolean containsProperty(String name) {
-          return this.source.containsKey(name);
-      }
-  
-      @Override
-      public String[] getPropertyNames() {
-          return StringUtils.toStringArray(this.source.keySet());
-      }
-  
-  }
-  ```
+source指定为Map类型的`PropertySource`实现。
 
-  
+```java
+public class MapPropertySource extends EnumerablePropertySource<Map<String, Object>> {
 
-- `PropertiesPropertySource`：source指定为`Properties`类型的`PropertySource`实现，`PropertiesPropertySource` 继承了`MapPropertySource`，说明`Properties`这个类本身是集合`Map`的子类， 查看`Properties`类的源码可以发现`Properties`这个类继承了`Hashtable`, 而`HashTable`又实现了`Map`接口，所以`PropertiesPropertySource`是`MapPropertySource`的特殊化类型实现。
+    public MapPropertySource(String name, Map<String, Object> source) {
+        super(name, source);
+    }
+
+
+    @Override
+    @Nullable
+    public Object getProperty(String name) {
+        return this.source.get(name);
+    }
+
+    @Override
+    public boolean containsProperty(String name) {
+        return this.source.containsKey(name);
+    }
+
+    @Override
+    public String[] getPropertyNames() {
+        return StringUtils.toStringArray(this.source.keySet());
+    }
+
+}
+```
+
+
+
+### `PropertiesPropertySource`
+source指定为`Properties`类型的`PropertySource`实现，`PropertiesPropertySource` 继承了`MapPropertySource`，说明`Properties`这个类本身是集合`Map`的子类， 查看`Properties`类的源码可以发现`Properties`这个类继承了`Hashtable`, 而`HashTable`又实现了`Map`接口，所以`PropertiesPropertySource`是`MapPropertySource`的特殊化类型实现。
 
   ```java
   public class PropertiesPropertySource extends MapPropertySource {
@@ -320,7 +323,8 @@ public abstract class PropertySource<T> {
 
   
 
-- `ResourcePropertySource`：继承自`PropertiesPropertySource`，source指定为通过`Resource`实例转化为`Properties`再转换为Map实例。
+### `ResourcePropertySource`
+继承自`PropertiesPropertySource`，source指定为通过`Resource`实例转化为`Properties`再转换为Map实例。
 
   ```java
   public class ResourcePropertySource extends PropertiesPropertySource {
@@ -337,7 +341,8 @@ public abstract class PropertySource<T> {
   }
   ```
 
-- `StubPropertySource`：`PropertySource`的一个内部类，source设置为null，实际上就是空实现。
+### `StubPropertySource`
+`PropertySource`的一个内部类，source设置为null，实际上就是空实现。
 
   ```java
   public abstract class PropertySource<T> {
@@ -376,7 +381,8 @@ public abstract class PropertySource<T> {
 
   
 
-- `ComparisonPropertySource`：继承自`ComparisonPropertySource`，所有属性访问方法强制抛出异常，作用就是一个不可访问属性的空实现。
+### `ComparisonPropertySource`
+继承自`ComparisonPropertySource`，所有属性访问方法强制抛出异常，作用就是一个不可访问属性的空实现。
 
   ```java
   public abstract class PropertySource<T> {	
@@ -658,6 +664,8 @@ public class MutablePropertySources implements PropertySources {
     }
 }
 ```
+
+## MutablePropertySources使用示例
 
 大多数`PropertySource`子类的修饰符都是public，可以直接使用，这里写个小demo：
 
