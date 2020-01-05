@@ -10,9 +10,7 @@ tags:
 - 泛型
 - 反射
 categories: 
-- java基础
 - spring
-- spring boot
 ---
 
 

@@ -289,6 +289,12 @@ public ConfigurableApplicationContext run(String... args) {
     // 4、加载classpath下面的META-INF/spring.factories中key为SpringApplicationRunListener的配置
     SpringApplicationRunListeners listeners = getRunListeners(args);
     // 执行所有runlistener的starting方法，实际上发布一个【ApplicationStartingEvent】事件
+    // 内部会发布ApplicationStartingEvent事件，有以下监听器监听了该事件（按执行顺序列出）：
+    // 括号中的代码表示该listener时是在哪个项目的spring.factories中声明的 
+    // org.springframework.boot.context.logging.LoggingApplicationListener  （spring-boot-2.2.1.RELEASE.jar）
+    // org.springframework.boot.autoconfigure.BackgroundPreinitializer       （spring-boot-autoconfigure-2.2.1.RELEASE.jar）
+    // org.springframework.boot.context.config.DelegatingApplicationListener   （spring-boot-2.2.1.RELEASE.jar）
+    // org.springframework.boot.liquibase.LiquibaseServiceLocatorApplicationListener   （spring-boot-2.2.1.RELEASE.jar）
     listeners.starting();
 
     try {
@@ -296,7 +302,32 @@ public ConfigurableApplicationContext run(String... args) {
         ApplicationArguments applicationArguments = new DefaultApplicationArguments(args);
 
         // 6、 创建Environment （web环境 or 标准环境）+配置Environment，主要是把run方法的参数配置
-        // 到Environment  发布【ApplicationEnvironmentPreparedEvent】事件
+        // 到Environment  发布【ApplicationEnvironmentPreparedEvent】事件，依次执行如下的listener：
+        // 括号中的代码表示该listener时是在哪个项目的spring.factories中声明的 
+        // org.springframework.cloud.bootstrap.BootstrapApplicationListener  (spring-cloud-context-2.2.0.RELEASE.jar!\META-INF\spring.factories)
+        // org.springframework.cloud.bootstrap.LoggingSystemShutdownListener  (spring-cloud-context-2.2.0.RELEASE.jar!\META-INF\spring.factories)
+        // org.springframework.boot.context.config.ConfigFileApplicationListener (spring-boot-2.2.1.RELEASE.jar!\META-INF\spring.factories)
+        // org.springframework.boot.context.config.AnsiOutputApplicationListener  (spring-boot-2.2.1.RELEASE.jar!\META-INF\spring.factories)
+        // org.springframework.boot.context.logging.LoggingApplicationListener   (spring-boot-2.2.1.RELEASE.jar!\META-INF\spring.factories)
+        // org.springframework.boot.autoconfigure.BackgroundPreinitializer       (spring-boot-autoconfigure-2.2.1.RELEASE.jar!\META-INF\spring.factories)
+        // org.springframework.boot.context.logging.ClasspathLoggingApplicationListener (spring-boot-2.2.1.RELEASE.jar!\META-INF\spring.factories)
+        // org.springframework.boot.context.config.DelegatingApplicationListener    (spring-boot-2.2.1.RELEASE.jar!\META-INF\spring.factories)
+        // org.springframework.boot.context.FileEncodingApplicationListener         (spring-boot-2.2.1.RELEASE.jar!\META-INF\spring.factories)
+
+        // 这段代码非常非常关键，spring cloud与spring boot的整合就是在这里开始的
+        // spring cloud的BootstrapApplicationListener实现了ApplicationListener接口，并且接收ApplicationEnvironmentPreparedEvent事件
+        // BootstrapApplicationListener中会创建一个新的SpringApplication，又会调用新创建的SpringApplication.run()方法产生id为bootstrap的
+        // 父ApplicationContext
+
+        // 返回类型可能是StandardServletEnvironment(spring boot servlet环境)或StandardEnvironment(spring cloud使用)，
+        // 下面列出environment中属性源的名称，属性源按照在ConfigurableEnvironment中的顺序包括:
+        // 【springApplicationCommandLineArgs】 // 有命令参数才有该属性源
+        //  configurationProperties 
+        // 【bootstrap】 //spring cloud中的， spring boot不存在该属性源
+        // 【servletConfigInitParams】// servlet应用存在该属性源， spring cloud不存在
+        // 【servletContextInitParams】// servlet应用存在该属性源， spring cloud不存在
+        //  systemProperties jvm系统属性源
+        //  systemEnvironment 系统环境变量属性源
         ConfigurableEnvironment environment = prepareEnvironment(listeners, applicationArguments);
         configureIgnoreBeanInfo(environment);
 
@@ -433,6 +464,11 @@ configureHeadlessProperty();
 ### 3.4.1、getRunListeners()方法
 ```java
 SpringApplicationRunListeners listeners = getRunListeners(args);
+// 内部会发布ApplicationStartingEvent事件，有以下监听器监听了该事件（按执行顺序列出）：
+// org.springframework.boot.context.logging.LoggingApplicationListener
+// org.springframework.boot.autoconfigure.BackgroundPreinitializer
+// org.springframework.boot.context.config.DelegatingApplicationListener
+// org.springframework.boot.liquibase.LiquibaseServiceLocatorApplicationListener
 listeners.starting();
 ```
 
@@ -441,12 +477,13 @@ listeners.starting();
 ```java
 private SpringApplicationRunListeners getRunListeners(String[] args) {
     Class<?>[] types = new Class<?>[] { SpringApplication.class, String[].class };
+    // SpringApplicationRunListener的实现实际只有EventPublishingRunListener
     return new SpringApplicationRunListeners(logger,
                                              getSpringFactoriesInstances(SpringApplicationRunListener.class, types, this, args));
 }
 ```
 
-可以看到返回了SpringApplicationRunListeners对象
+可以看到返回了SpringApplicationRunListeners对象，
 
 ### 3.4.2、创建SpringApplicationRunListeners
 
@@ -458,6 +495,10 @@ class SpringApplicationRunListeners {
 
     private final List<SpringApplicationRunListener> listeners;
 
+    /**
+    *
+    * @param listeners 这个集合实际只有EventPublishingRunListener一个类的实例
+    */
     SpringApplicationRunListeners(Log log, Collection<? extends SpringApplicationRunListener> listeners) {
         this.log = log;
         this.listeners = new ArrayList<>(listeners);
@@ -780,8 +821,15 @@ private ConfigurableEnvironment prepareEnvironment(SpringApplicationRunListeners
     configureEnvironment(environment, applicationArguments.getSourceArgs());
     // 3.6.3、
     ConfigurationPropertySources.attach(environment);
-    // 3.6.4、发布ApplicationEnvironmentPreparedEvent事件
+    
+    // 3.6.4、这里的listeners是SpringApplicationRunListeners，发布ApplicationEnvironmentPreparedEvent事件
+    
+    // 这段代码非常非常重要，spring cloud与spring boot的整合就是在这里开始的
+    // spring cloud的BootstrapApplicationListener实现了ApplicationListener接口，并且接收ApplicationEnvironmentPreparedEvent事件
+    // BootstrapApplicationListener中会创建一个新的SpringApplication，又会调用新创建的SpringApplication.run()方法产生id为bootstrap的
+    // 父ApplicationContext
     listeners.environmentPrepared(environment);
+    
     // 3.6.5、绑定ConfigurableEnvironment到当前的SpringApplication实例中
     bindToSpringApplication(environment);
     
@@ -793,6 +841,8 @@ private ConfigurableEnvironment prepareEnvironment(SpringApplicationRunListeners
     return environment;
 }
 ```
+
+**上面的代码需要重点关注，和spring cloud的整合在这里开始**。
 
 ### 3.6.1、获取（或者创建）ConfigurableEnvironment
 
@@ -1148,7 +1198,19 @@ public final class ConfigurationPropertySources {
 ### 3.6.4、发布ApplicationEnvironmentPreparedEvent事件
 
 ```java
+// 内部会发布ApplicationEnvironmentPreparedEvent事件，依次执行如下的listener：
+// 括号中的代码表示该listener时是在哪个项目的spring.factories中声明的 
+// org.springframework.cloud.bootstrap.BootstrapApplicationListener  (spring-cloud-context-2.2.0.RELEASE.jar!\META-INF\spring.factories)
+// org.springframework.cloud.bootstrap.LoggingSystemShutdownListener  (spring-cloud-context-2.2.0.RELEASE.jar!\META-INF\spring.factories)
+// org.springframework.boot.context.config.ConfigFileApplicationListener (spring-boot-2.2.1.RELEASE.jar!\META-INF\spring.factories)
+// org.springframework.boot.context.config.AnsiOutputApplicationListener  (spring-boot-2.2.1.RELEASE.jar!\META-INF\spring.factories)
+// org.springframework.boot.context.logging.LoggingApplicationListener   (spring-boot-2.2.1.RELEASE.jar!\META-INF\spring.factories)
+// org.springframework.boot.autoconfigure.BackgroundPreinitializer       (spring-boot-autoconfigure-2.2.1.RELEASE.jar!\META-INF\spring.factories)
+// org.springframework.boot.context.logging.ClasspathLoggingApplicationListener (spring-boot-2.2.1.RELEASE.jar!\META-INF\spring.factories)
+// org.springframework.boot.context.config.DelegatingApplicationListener    (spring-boot-2.2.1.RELEASE.jar!\META-INF\spring.factories)
+// org.springframework.boot.context.FileEncodingApplicationListener         (spring-boot-2.2.1.RELEASE.jar!\META-INF\spring.factories)
 listeners.environmentPrepared(environment);
+
 ```
 
 `SpringApplicationRunListeners`类的`environmentPrepared`方法源码如下：
@@ -1159,10 +1221,20 @@ class SpringApplicationRunListeners {
 
     private final Log log;
 
+    // SpringApplicationRunListener`的实现类只有EventPublishingRunListener
     private final List<SpringApplicationRunListener> listeners;
+    
+    // 该构造方法是在SpringApplication#getRunListeners(String[] args)中调用的
+    // 传入的listeners集合就只有1个元素EventPublishingRunListener
+    SpringApplicationRunListeners(Log log, Collection<? extends SpringApplicationRunListener> listeners) {
+		this.log = log;
+		this.listeners = new ArrayList<>(listeners);
+	}
 
     void environmentPrepared(ConfigurableEnvironment environment) {
+        // this.listeners集合就只有EventPublishingRunListener
         for (SpringApplicationRunListener listener : this.listeners) {
+            // 调用EventPublishingRunListener.environmentPrepared(ConfigurableEnvironment environment)方法
             listener.environmentPrepared(environment);
         }
     }
@@ -1184,6 +1256,7 @@ public class EventPublishingRunListener implements SpringApplicationRunListener,
 
     @Override
     public void environmentPrepared(ConfigurableEnvironment environment) {
+        
         this.initialMulticaster
             .multicastEvent(new ApplicationEnvironmentPreparedEvent(this.application, this.args, environment));
     }
@@ -1192,6 +1265,1057 @@ public class EventPublishingRunListener implements SpringApplicationRunListener,
 ```
 
 
+
+#### 3.6.4.1、SimpleApplicationEventMulticaster.multicastEvent(ApplicationEvent event)
+
+SimpleApplicationEventMulticaster类的作用时真正的发布事件(ApplicationEvent event)。
+
+SimpleApplicationEventMulticaster类的源码如下：
+
+```java
+/**
+* ApplicationEventMulticaster接口的简单实现。
+* 将所有事件(ApplicationEvent)广播给所有已注册的监听器(ApplicationEvent)，然后由监听器忽略他们不感兴趣的事件，
+* 监听器通常对传入的事件执行相应的instanceof检查，来确定该事件是否是自己感兴趣的，如果对该事件不敢兴趣就忽略它，否则进行业务逻辑处理。
+*
+* 默认情况下所有监听器在调用线程中被执行，但这带来了恶意的侦听器可能会阻塞整个应用的风险，但只增加了最小的开销，可以指定一个可选的
+* 任务执行器(Executor taskExecutor)来让监听器(ApplicationListener)在不同的线程中执行，例如这个taskExecutor可以是一个线程池，
+* 这样无论ApplicationListener的执行时间多长(比如ApplicationListener中存在耗时的网络请求、性能不好的数据库访问或是否是阻塞操作(比如io、等待CPU)），
+* 都不会导致整个应用被阻塞
+*/
+public class SimpleApplicationEventMulticaster extends AbstractApplicationEventMulticaster {
+    // 指定ApplicationListener在哪个线程执行器中执行（可以不指定），具体含义参见上面类级别的文档
+    @Nullable
+    private Executor taskExecutor;
+
+    // 错误处理器，作用参见invokeListener(ApplicationListener<?> listener, ApplicationEvent event)方法内注释
+    @Nullable
+    private ErrorHandler errorHandler;
+
+    public SimpleApplicationEventMulticaster() {
+
+    }
+
+    // 可以指定ApplicationListener在哪个线程执行器中执行
+    public void setTaskExecutor(@Nullable Executor taskExecutor) {
+        this.taskExecutor = taskExecutor;
+    }
+
+    // 可以指定ApplicationListener的错误处理器
+    public void setErrorHandler(@Nullable ErrorHandler errorHandler) {
+        this.errorHandler = errorHandler;
+    }
+
+
+
+    @Override
+    public void multicastEvent(ApplicationEvent event) {
+        multicastEvent(event, resolveDefaultEventType(event));
+    }
+
+    @Override
+    public void multicastEvent(final ApplicationEvent event, @Nullable ResolvableType eventType) {
+        ResolvableType type = (eventType != null ? eventType : resolveDefaultEventType(event));
+        // 获得ApplicationListener的执行器（该执行器是可选的）
+        Executor executor = getTaskExecutor();
+        // 找到对该ApplicationEvent感兴趣的监听器(ApplicationListener)
+        for (ApplicationListener<?> listener : getApplicationListeners(event, type)) {
+            // 判断是否指定了ApplicationListener在哪个线程执行器中执行
+            if (executor != null) {
+                // 在指定的taskExecutor中执行，不会阻塞调用线程
+                executor.execute(() -> invokeListener(listener, event));
+            }
+            else {
+                // 没有指定taskExecutor，执行在调用线程中执行（可能会阻塞调用线程）
+                invokeListener(listener, event);
+            }
+        }
+    }
+
+    protected void invokeListener(ApplicationListener<?> listener, ApplicationEvent event) {
+        // 是否有错误处理器，如果有错误处理器，那么ApplicationListener方法内执行抛出异常时会捕获抛出的异常交由指定的错误处理器去处理
+        // 否则spring不处理
+        ErrorHandler errorHandler = getErrorHandler();
+        if (errorHandler != null) {
+            try {
+                doInvokeListener(listener, event);
+            }
+            catch (Throwable err) {
+                // 交由错误处理器处理异常
+                errorHandler.handleError(err);
+            }
+        }
+        else {
+            // 如果ApplicationListener方法执行时产生异常，则不处理，由上级处理
+            doInvokeListener(listener, event);
+        }
+    }
+
+    private void doInvokeListener(ApplicationListener listener, ApplicationEvent event) {
+        try {
+            // onApplicationEvent方法就是我们平时使用ApplicationLisenter接口时要实现的方法，回调观察者
+            listener.onApplicationEvent(event);
+        }
+        catch (ClassCastException ex) {
+            String msg = ex.getMessage();
+            if (msg == null || matchesClassCastMessage(msg, event.getClass())) {
+                // Possibly a lambda-defined listener which we could not resolve the generic event type for
+                // -> let's suppress the exception and just log a debug message.
+                Log logger = LogFactory.getLog(getClass());
+                if (logger.isTraceEnabled()) {
+                    logger.trace("Non-matching event type for listener: " + listener, ex);
+                }
+            }
+            else {
+                throw ex;
+            }
+        }
+    }
+}
+```
+
+从上面第47行代码可以看到这是一个for循环，for循环的对象是getApplications()方法的返回值，这里我们不关注是怎么找到对ApplicationEnvironmentPreparedEvent事件感兴趣的ApplicationListener的，重点看getApplicaitons()方法的返回值有哪些，有哪些ApplicationListener的实现类对ApplicationEnvironmentPreparedEvent事件感兴趣，下面具体分析这些监听器的实现。
+
+#### 3.6.4.2、接收ApplicationEnvironmentPreparedEvent事件的ApplicationListener
+
+使用idea调试时getApplications()方法的返回值(spring cloud环境)：
+
+![](https://cdn.jsdelivr.net/gh/calebzhao/cdn/img/20200104151616.png)
+
+
+
+按照执行顺序这些监听器的实现出处如下（注意下面文件的内容不是实际的文件内容顺序，是按照实际执行顺序列出）：
+
+- `spring-cloud-context-2.2.0.RELEASE.jar!\META-INF\spring.factories` 共2个
+
+  ```properties
+  ## Application Listeners
+  org.springframework.context.ApplicationListener=\
+  org.springframework.cloud.bootstrap.BootstrapApplicationListener,\
+  org.springframework.cloud.bootstrap.LoggingSystemShutdownListener,\
+  ...省略不相关的
+  ```
+
+  
+
+- `spring-boot-2.2.1.RELEASE.jar!\META-INF\spring.factories` 
+
+  ```properties
+  ## Application Listeners
+  org.springframework.context.ApplicationListener=\
+  org.springframework.boot.context.config.ConfigFileApplicationListener,\
+  org.springframework.boot.context.config.AnsiOutputApplicationListener,\
+  org.springframework.boot.context.logging.LoggingApplicationListener,\
+  ...省略不相关的
+  ```
+
+- `spring-boot-autoconfigure-2.2.1.RELEASE.jar!\META-INF\spring.factories`共1个
+
+  ```properties
+  # Application Listeners
+  org.springframework.context.ApplicationListener=\
+  org.springframework.boot.autoconfigure.BackgroundPreinitializer
+  ```
+
+- `spring-boot-2.2.1.RELEASE.jar!\META-INF\spring.factories` 
+
+  ```properties
+  ## Application Listeners
+  org.springframework.context.ApplicationListener=\
+  org.springframework.boot.context.logging.ClasspathLoggingApplicationListener,\
+  org.springframework.boot.context.config.DelegatingApplicationListener,\
+  org.springframework.boot.context.FileEncodingApplicationListener,\
+  ...省略不相关的
+  ```
+
+根据`getApplications()`方法的返回值看到第一个监听了`ApplicationEnvironmentPreparedEvent`事件的`ApplicationListener`就是spring cloud的`org.springframework.cloud.bootstrap.BootstrapApplicationListener`, 下面开始分析BootstrapApplicationListener`类的源码
+
+#### 3.6.4.3、spring cloud的BootstrapApplicationListener
+
+```java
+public class BootstrapApplicationListener
+    implements ApplicationListener<ApplicationEnvironmentPreparedEvent>, Ordered {
+
+    /**
+	 * Property source name for bootstrap.
+	 */
+    public static final String BOOTSTRAP_PROPERTY_SOURCE_NAME = "bootstrap";
+
+    /**
+	 * The default order for this listener.
+	 */
+    public static final int DEFAULT_ORDER = Ordered.HIGHEST_PRECEDENCE + 5;
+
+    /**
+	 * The name of the default properties.
+	 */
+    public static final String DEFAULT_PROPERTIES = "springCloudDefaultProperties";
+
+    private int order = DEFAULT_ORDER;
+
+    @Override
+    public void onApplicationEvent(ApplicationEnvironmentPreparedEvent event) {
+        // 这里的environment是SpringApplication.run(xxx.class, args)时创建的StandardServletEnvironment
+        // 属性源包括configurationProperties、servletConfigInitParams、servletContextInitParams、systemProperties、systemEnvironment
+        ConfigurableEnvironment environment = event.getEnvironment();
+        
+        // 判断spring.cloud.bootstrap.enabled的属性值，若未设置则默认true
+        // 这段代码的意思是是否启用了springg cloud，默认true启动
+        if (!environment.getProperty("spring.cloud.bootstrap.enabled", Boolean.class, true)) {
+            // 已经设置过spring.cloud.bootstrap.enabled属性为false，代表不启用spring cloud功能，直接返回
+            // 那么就不会创建id为bootstrap的父ApplicationContext
+            return;
+        }
+        
+        // 运行到这里表示启用spring cloud
+        
+        // don't listen to events in a bootstrap context
+        // 不监听bootstrap的发布的ApplicationEnvironmentPreparedEvent事件， 防止重复创建id为bootstrap的ApplicationContext
+        // 这里判断environment中是否包含名称为"bootstrap"的属性源，
+        // 注意后续的bootstrapServiceContext()方法中会为spring cloud的environment添加名称为"bootstrap"的属性源，
+        // 所以bootstrapServiceContext()方法中为spring cloud创建的SpringApplication在调用其run()方法时发布
+        // ApplicationEnvironmentPreparedEvent事件又会进入当前类中，但是由于该bootstrap的environment(spring cloud的)已经
+        // 有名称为"bootstrap"的属性源，所以不会继续往后执行。
+        if (environment.getPropertySources().contains(BOOTSTRAP_PROPERTY_SOURCE_NAME)) {
+            return;
+        }
+        ConfigurableApplicationContext context = null;
+        // 从命令行参数、系统属性、系统环境变量解析spring.cloud.bootstrap.name的值，如果都未指定则使用默认名称bootstrap
+        String configName = environment.resolvePlaceholders("${spring.cloud.bootstrap.name:bootstrap}");
+        
+        // 这里的event.getSpringApplication().getInitializers()返回的是SpringApplication.run()方法启动时SpringApplication的构造
+        // 方法中通过SpringFacoriesLoader获取到的ApplicationContextInitializer。
+        // 按照顺序如下, 括号中的jar文件名代表其对应的spring.factories文件出处：
+        // org.springframework.boot.autoconfigure.SharedMetadataReaderFactoryContextInitializer （spring-boot-autoconfigure-2.2.1.RELEASE.jar）
+        // org.springframework.boot.context.config.DelegatingApplicationContextInitializer （spring-boot-2.2.1.RELEASE.jar）
+        // org.springframework.boot.context.ContextIdApplicationContextInitializer  （spring-boot-2.2.1.RELEASE.jar）
+        //  org.springframework.boot.autoconfigure.logging.ConditionEvaluationReportLoggingListener （spring-boot-autoconfigure-2.2.1.RELEASE.jar）
+        // org.springframework.boot.context.ConfigurationWarningsApplicationContextInitializer （spring-boot-2.2.1.RELEASE.jar）
+        // org.springframework.boot.rsocket.context.RSocketPortInfoApplicationContextInitializer （spring-boot-2.2.1.RELEASE.jar）
+        // org.springframework.boot.web.context.ServerPortInfoApplicationContextInitializer （spring-boot-2.2.1.RELEASE.jar）
+        for (ApplicationContextInitializer<?> initializer : event.getSpringApplication().getInitializers()) {
+            if (initializer instanceof ParentContextApplicationContextInitializer) {
+                // 不会运行到这里，上面所有列出来的类都不是ParentContextApplicationContextInitializer类型
+                context = findBootstrapContext((ParentContextApplicationContextInitializer) initializer, configName);
+            }
+        }
+        
+        // 运行到这里context为null
+        if (context == null) {
+            // 创建id为bootstrap的父ApplicationContext
+            context = bootstrapServiceContext(environment, event.getSpringApplication(), configName);
+            event.getSpringApplication()
+                .addListeners(new CloseContextOnFailureApplicationListener(context));
+        }
+
+        apply(context, event.getSpringApplication(), environment);
+    }
+}
+```
+
+创建spring cloud的ApplicationContext
+
+`context = bootstrapServiceContext(environment, event.getSpringApplication(), configName);`这行代码的实现如下：
+
+```java
+private ConfigurableApplicationContext bootstrapServiceContext(
+    ConfigurableEnvironment environment, final SpringApplication application, String configName) {
+    // 创建spring cloud 的environment
+    StandardEnvironment bootstrapEnvironment = new StandardEnvironment();
+    // 获取上面创建spring cloud 的可变属性源
+    MutablePropertySources bootstrapProperties = bootstrapEnvironment.getPropertySources();
+    for (PropertySource<?> source : bootstrapProperties) {
+        bootstrapProperties.remove(source.getName());
+    }
+
+    // 从spring boot的environment获取"spring.cloud.bootstrap.location"属性
+    String configLocation = environment.resolvePlaceholders("${spring.cloud.bootstrap.location:}");
+
+    // 创建spring cloud的属性源的数据源，后面会把这个map加进去spring cloud的environment中
+    Map<String, Object> bootstrapMap = new HashMap<>();
+    bootstrapMap.put("spring.config.name", configName);
+    // if an app (or test) uses spring.main.web-application-type=reactive, bootstrap
+    // will fail
+    // force the environment to use none, because if though it is set below in the
+    // builder
+    // the environment overrides it
+    bootstrapMap.put("spring.main.web-application-type", "none");
+    if (StringUtils.hasText(configLocation)) {
+        bootstrapMap.put("spring.config.location", configLocation);
+    }
+    // 为spring cloud的environment添加name为"bootstrap"的属性源，属性源中包括2个属性"spring.config.name"及"spring.config.location"
+    bootstrapProperties.addFirst(new MapPropertySource(BOOTSTRAP_PROPERTY_SOURCE_NAME, bootstrapMap));
+
+    // 遍历spring boot的属性源
+    for (PropertySource<?> source : environment.getPropertySources()) {
+        // 如果是占位符的属性源就跳过
+        if (source instanceof StubPropertySource) {
+            continue;
+        }
+        // 将spring boot的属性源添加到spring cloud的environment中，
+        // 注意这里是addLast
+        bootstrapProperties.addLast(source);
+    }
+
+    // 创建spring cloud自身的SpringApplication了，
+    // SpringApplicationBuilder的构造方法会创建SpringApplication对象（又获取ApplicationContextInitializer和ApplicationListener）
+    SpringApplicationBuilder builder = new SpringApplicationBuilder()
+        // 指定激活的环境，关系banner输出
+        .profiles(environment.getActiveProfiles()).bannerMode(Mode.OFF)
+        // 设置spring cloud的环境，设置后在调用run()方法时就不会再创建了
+        // 这里可以回顾下SpringApplication.getOrCreateEnvironment()方法的实现
+        .environment(bootstrapEnvironment)
+        // 不打印启动日志
+        .registerShutdownHook(false).logStartupInfo(false)
+        // 非web
+        .web(WebApplicationType.NONE);
+    // 返回SpringApplicationBuilder创建的SpringApplication
+    final SpringApplication builderApplication = builder.application();
+    // SpringApplication的构造方法中有this.mainApplicationClass = deduceMainApplicationClass();这行代码会获取mainApplicationClass
+    // 所以builderApplication.getMainApplicationClass()一般不会返回为null
+    if (builderApplication.getMainApplicationClass() == null) {
+        // 不会进入这里
+        // gh_425:
+        // SpringApplication cannot deduce the MainApplicationClass here
+        // if it is booted from SpringBootServletInitializer due to the
+        // absense of the "main" method in stackTraces.
+        // But luckily this method's second parameter "application" here
+        // carries the real MainApplicationClass which has been explicitly
+        // set by SpringBootServletInitializer itself already.
+        builder.main(application.getMainApplicationClass());
+    }
+    if (environment.getPropertySources().contains("refreshArgs")) {
+        // If we are doing a context refresh, really we only want to refresh the
+        // Environment, and there are some toxic listeners (like the
+        // LoggingApplicationListener) that affect global static state, so we need a
+        // way to switch those off.
+        builderApplication
+            .setListeners(filterListeners(builderApplication.getListeners()));
+    }
+    builder.sources(BootstrapImportSelectorConfiguration.class);
+    // 关键代码，创建spring cloud自身的ApplicationContext，又会把spring boot的SpringApplication.run()方法的流程全部走一遍
+    final ConfigurableApplicationContext context = builder.run();
+    // gh-214 using spring.application.name=bootstrap to set the context id via
+    // `ContextIdApplicationContextInitializer` prevents apps from getting the actual
+    // spring.application.name
+    // during the bootstrap phase.
+    // 设置spring cloud的ApplicationContext的id为"bootstrap"
+    context.setId("bootstrap");
+    // 这里的addAncestorInitializer方法的第1个参数application是spring boot的SpringApplication对象
+    // 而第2个参数context是上一行代码返回的spring cloud的ApplicationContext
+    addAncestorInitializer(application, context);
+    // spring cloud的环境中现在有一些属性是我们不想在父ApplicationContext中看到的，所以把它移除(稍后会添加回来)
+    bootstrapProperties.remove(BOOTSTRAP_PROPERTY_SOURCE_NAME);
+    mergeDefaultProperties(environment.getPropertySources(), bootstrapProperties);
+    // 返回spring cloud的ApplicationContext
+    return context;
+}
+
+/**
+*
+* @param  application   该属性是spring boot的SpringApplication对象
+* @param  context       spring cloud的ApplicationContext
+*/
+private void addAncestorInitializer(SpringApplication application,
+                                    ConfigurableApplicationContext context) {
+    boolean installed = false;
+    for (ApplicationContextInitializer<?> initializer : application
+         .getInitializers()) {
+        if (initializer instanceof AncestorInitializer) {
+            installed = true;
+            // New parent
+            ((AncestorInitializer) initializer).setParent(context);
+        }
+    }
+    if (!installed) {
+        application.addInitializers(new AncestorInitializer(context));
+    }
+
+}
+```
+
+
+
+
+
+
+
+```
+org.springframework.cloud.bootstrap.BootstrapApplicationListener
+	org.springframework.cloud.bootstrap.LoggingSystemShutdownListener
+	org.springframework.boot.context.config.ConfigFileApplicationListener(SmartApplicationListener)
+    	org.springframework.boot.env.EnvironmentPostProcessor=
+    		org.springframework.boot.env.SystemEnvironmentPropertySourceEnvironmentPostProcessor,\
+    		org.springframework.boot.env.SpringApplicationJsonEnvironmentPostProcessor,\
+    		org.springframework.cloud.client.HostInfoEnvironmentPostProcessor
+            org.springframework.boot.cloud.CloudFoundryVcapEnvironmentPostProcessor,\
+            org.springframework.boot.context.config.ConfigFileApplicationListener
+            	# PropertySource Loaders
+                org.springframework.boot.env.PropertySourceLoader=\
+                    org.springframework.boot.env.PropertiesPropertySourceLoader,\
+                    org.springframework.boot.env.YamlPropertySourceLoader
+            org.springframework.boot.reactor.DebugAgentEnvironmentPostProcessor
+```
+
+
+
+#### 3.6.4.4、ConfigFileApplicationListener
+
+```java
+public class ConfigFileApplicationListener implements EnvironmentPostProcessor, SmartApplicationListener, Ordered {
+
+    @Override
+    public void onApplicationEvent(ApplicationEvent event) {
+        if (event instanceof ApplicationEnvironmentPreparedEvent) {
+            onApplicationEnvironmentPreparedEvent((ApplicationEnvironmentPreparedEvent) event);
+        }
+        if (event instanceof ApplicationPreparedEvent) {
+            onApplicationPreparedEvent(event);
+        }
+    }
+
+    private void onApplicationEnvironmentPreparedEvent(ApplicationEnvironmentPreparedEvent event) {
+        List<EnvironmentPostProcessor> postProcessors = loadPostProcessors();
+        // 当前类本身实现了EnvironmentPostProcessor接口，把自己加到postProcessors集合中，
+        postProcessors.add(this);
+        
+         // 进行排序，排序后此时的postProcessors按照执行顺序如下：
+        // org.springframework.boot.env.SystemEnvironmentPropertySourceEnvironmentPostProcessor  （spring-boot-2.2.1.RELEASE.jar）
+        // org.springframework.boot.env.SpringApplicationJsonEnvironmentPostProcessor   （spring-boot-2.2.1.RELEASE.jar）
+        // org.springframework.cloud.client.HostInfoEnvironmentPostProcessor          （spring-cloud-commons-2.2.0.RELEASE.jar）
+        // org.springframework.boot.cloud.CloudFoundryVcapEnvironmentPostProcessor   （spring-boot-2.2.1.RELEASE.jar）
+        // org.springframework.boot.context.config.ConfigFileApplicationListener      （上一行把自己添加进来的，不是来源于spring.factories文件中）
+        // org.springframework.boot.reactor.DebugAgentEnvironmentPostProcessor        （spring-boot-2.2.1.RELEASE.jar）
+        AnnotationAwareOrderComparator.sort(postProcessors);
+        // 遍历处理每一个EnvironmentPostProcessor
+        for (EnvironmentPostProcessor postProcessor : postProcessors) {
+            postProcessor.postProcessEnvironment(event.getEnvironment(), event.getSpringApplication());
+        }
+    }
+
+    private void onApplicationPreparedEvent(ApplicationEvent event) {
+        this.logger.switchTo(ConfigFileApplicationListener.class);
+        addPostProcessors(((ApplicationPreparedEvent) event).getApplicationContext());
+    }
+
+    List<EnvironmentPostProcessor> loadPostProcessors() {
+        // 返回的EnvironmentPostProcessor按照执行顺序如下：
+        // 括号中的代表该自动化配置的所在的spring.factories文件出处
+        // org.springframework.boot.env.SystemEnvironmentPropertySourceEnvironmentPostProcessor  （spring-boot-2.2.1.RELEASE.jar）
+        // org.springframework.boot.env.SpringApplicationJsonEnvironmentPostProcessor   （spring-boot-2.2.1.RELEASE.jar）
+        // org.springframework.cloud.client.HostInfoEnvironmentPostProcessor          （spring-cloud-commons-2.2.0.RELEASE.jar）
+        // org.springframework.boot.cloud.CloudFoundryVcapEnvironmentPostProcessor   （spring-boot-2.2.1.RELEASE.jar）
+        // org.springframework.boot.reactor.DebugAgentEnvironmentPostProcessor        （spring-boot-2.2.1.RELEASE.jar）
+        return SpringFactoriesLoader.loadFactories(EnvironmentPostProcessor.class, getClass().getClassLoader());
+    }
+    
+    // 当前类实现了EnvironmentPostProcessor接口
+    @Override
+	public void postProcessEnvironment(ConfigurableEnvironment environment, SpringApplication application) {
+		addPropertySources(environment, application.getResourceLoader());
+	}
+}
+```
+
+- `SystemEnvironmentPropertySourceEnvironmentPostProcessor`
+
+  ``` java
+  public class SystemEnvironmentPropertySourceEnvironmentPostProcessor implements EnvironmentPostProcessor, Ordered {
+  
+      @Override
+      public void postProcessEnvironment(ConfigurableEnvironment environment, SpringApplication application) {
+          // sourceName的值为"systemEnvironment"
+          String sourceName = StandardEnvironment.SYSTEM_ENVIRONMENT_PROPERTY_SOURCE_NAME;
+          // 获取name为"systemEnvironment"的系统环境变量属性源
+          PropertySource<?> propertySource = environment.getPropertySources().get(sourceName);
+          // 一般都不会为null
+          if (propertySource != null) {
+              // 会执行到这里，调用当前类的replacePropertySource方法
+              replacePropertySource(environment, sourceName, propertySource);
+          }
+      }
+  
+      /**
+      *
+      * @param environment spring boot/cloud的环境对象，servlet环境是StandardServletEnvironment
+      * @param sourceName  值为"systemEnvironment"
+      * @parm propertySource  名称为"systemEnvironment"的系统环境变量属性源
+      */
+      private void replacePropertySource(ConfigurableEnvironment environment, String sourceName,
+                                         PropertySource<?> propertySource) {
+          // 获取所有系统环境变量
+          Map<String, Object> originalSource = (Map<String, Object>) propertySource.getSource();
+          SystemEnvironmentPropertySource source = new OriginAwareSystemEnvironmentPropertySource(sourceName,
+                                                                                                  originalSource);
+          // 把name为"systemEnvironment"的系统环境变量属性源替换为OriginAwareSystemEnvironmentPropertySource
+          // 有什么作用？？目前还不清楚为什么要这样做。
+          environment.getPropertySources().replace(sourceName, source);
+      }
+  
+  }
+  ```
+
+  
+
+- `SpringApplicationJsonEnvironmentPostProcessor`
+
+  ```java
+  /**
+  *
+  * 找到environment中Key为"spring.application.json"的属性，将其值解析为Map对象，作为一个属性源，
+  * 向environment中添加1个name为"spring.application.json"的JsonPropertySource属性源，数据源是之前描述的解析得到的Map对象
+  */
+  public class SpringApplicationJsonEnvironmentPostProcessor implements EnvironmentPostProcessor, Ordered {
+  
+      public static final String SPRING_APPLICATION_JSON_PROPERTY = "spring.application.json";
+  
+  
+      public static final String SPRING_APPLICATION_JSON_ENVIRONMENT_VARIABLE = "SPRING_APPLICATION_JSON";
+  
+  
+      @Override
+      public void postProcessEnvironment(ConfigurableEnvironment environment, SpringApplication application) {
+          // 获取可变属性源，包括springApplicationCommandLineArgs、configurationProperties、bootstrap、systemProperties、systemEnvironment属性源
+          MutablePropertySources propertySources = environment.getPropertySources();
+          propertySources.stream()
+              //  获取"spring.application.json" 或 "SPRING_APPLICATION_JSON"属性的实际值对应的JsonPropertyValue对象
+              // 如果当前属性源不存在该属性则返回null
+              // 返回的数据形式如[null, JsonPropertyValue, null, JsonPropertyValue, JsonPropertyValue, null...]
+              .map(JsonPropertyValue::get)
+              // 找出第一个非null的JsonPropertyValue
+              .filter(Objects::nonNull).findFirst()
+              // 如果存在"spring.application.json" 或 "SPRING_APPLICATION_JSON"属性的实际值对应的JsonPropertyValue对象则进行处理
+              .ifPresent((v) -> processJson(environment, v));
+      }
+      
+      // 处理spring boot/cloud环境中"spring.application.json" 或 "SPRING_APPLICATION_JSON"属性的实际值对应的JsonPropertyValue对象
+      private void processJson(ConfigurableEnvironment environment, JsonPropertyValue propertyValue) {
+          // 根据classpath类路径是否存在com.fasterxml.jackson.databind.ObjectMapper、com.google.gson.Gson、org.yaml.snakeyaml.Yaml
+          // 类返回对应的解析器JacksonJsonParser、GsonJsonParser、YamlJsonParser、BasicJsonParser
+  		JsonParser parser = JsonParserFactory.getJsonParser();
+           // propertyValue.getJson()的值为environment中"spring.application.json" 或 "SPRING_APPLICATION_JSON"属性的值
+          // 使用jackson、gson、yaml将字符串解析为Map类型对象
+  		Map<String, Object> map = parser.parseMap(propertyValue.getJson());
+  		if (!map.isEmpty()) {
+               // 添加name为"spring.application.json"的属性源 
+  			addJsonPropertySource(environment, new JsonPropertySource(propertyValue, flatten(map)));
+  		}
+  	}
+  
+      private static class JsonPropertyValue {
+  		// 实际值为 ["spring.application.json", "SPRING_APPLICATION_JSON"]
+          private static final String[] CANDIDATES = { SPRING_APPLICATION_JSON_PROPERTY,
+                                                      SPRING_APPLICATION_JSON_ENVIRONMENT_VARIABLE };
+          
+          private final PropertySource<?> propertySource;
+  
+  		private final String propertyName;
+  
+  		private final String json;
+  
+          /**
+          * @param propertySource "spring.application.json" 或 "SPRING_APPLICATION_JSON"属性所在的属性源
+          * @param propertyName 表示根据哪个属性名找到的属性值的，值为字符串"spring.application.json" 或 "SPRING_APPLICATION_JSON"其中之一
+          * @param json 在envorpnment中"spring.application.json" 或 "SPRING_APPLICATION_JSON"属性对应的值
+          */
+  		JsonPropertyValue(PropertySource<?> propertySource, String propertyName, String json) {
+  			this.propertySource = propertySource;
+  			this.propertyName = propertyName;
+  			this.json = json;
+  		}
+  
+          /**
+          *
+          * @param propertySource  属性源
+          */
+          static JsonPropertyValue get(PropertySource<?> propertySource) {
+              for (String candidate : CANDIDATES) {
+                  // 获取"spring.application.json" 或 "SPRING_APPLICATION_JSON"属性的实际值
+                  Object value = propertySource.getProperty(candidate);
+                  // 判断属性的值是否是字符串并且有内容
+                  if (value instanceof String && StringUtils.hasLength((String) value)) {
+                      // 返回当前类的实例
+                      return new JsonPropertyValue(propertySource, candidate, (String) value);
+                  }
+              }
+              return null;
+          }
+      }
+      
+      private static class JsonPropertySource extends MapPropertySource implements OriginLookup<String> {
+  
+  		private final JsonPropertyValue propertyValue;
+  
+  		JsonPropertySource(JsonPropertyValue propertyValue, Map<String, Object> source) {
+               // 属性源的name为"spring.application.json"
+  			super(SPRING_APPLICATION_JSON_PROPERTY, source);
+  			this.propertyValue = propertyValue;
+  		}
+  
+  		@Override
+  		public Origin getOrigin(String key) {
+  			return this.propertyValue.getOrigin();
+  		}
+  
+  	}
+      
+  }
+  ```
+
+  
+
+- `HostInfoEnvironmentPostProcessor`
+
+  ```java
+  public class HostInfoEnvironmentPostProcessor implements EnvironmentPostProcessor, Ordered {
+      @Override
+      public void postProcessEnvironment(ConfigurableEnvironment environment,
+                                         SpringApplication application) {
+          // 找到第1个非回环地址(非127.xxx.xxx.xxx)信息
+          InetUtils.HostInfo hostInfo = getFirstNonLoopbackHostInfo(environment);
+          LinkedHashMap<String, Object> map = new LinkedHashMap<>();
+          // 计算机名，例如我的电脑是calebzhao，win10系统在桌面图标“此电脑”右键菜单点击属性即可看到计算机名
+          map.put("spring.cloud.client.hostname", hostInfo.getHostname());
+          // 电脑ip地址，不是本地回环地址，一般个人计算机是192.168.xxx.xxx
+          map.put("spring.cloud.client.ip-address", hostInfo.getIpAddress());
+          MapPropertySource propertySource = new MapPropertySource(
+              "springCloudClientHostInfo", map);
+          // 添加了一个名称为springCloudClientHostInfo的属性源
+          environment.getPropertySources().addLast(propertySource);
+      }
+  
+      private HostInfo getFirstNonLoopbackHostInfo(ConfigurableEnvironment environment) {
+          InetUtilsProperties target = new InetUtilsProperties();
+          ConfigurationPropertySources.attach(environment);
+          Binder.get(environment).bind(InetUtilsProperties.PREFIX,
+                                       Bindable.ofInstance(target));
+          try (InetUtils utils = new InetUtils(target)) {
+              return utils.findFirstNonLoopbackHostInfo();
+          }
+      }
+  }
+  ```
+
+  
+
+- `ConfigFileApplicationListener`
+
+  默认从`["file:./config/", "file:./", "classpath:/config/", "classpath:/"]`目录下加载配置文件
+
+  ```java
+  public class ConfigFileApplicationListener implements EnvironmentPostProcessor, SmartApplicationListener, Ordered {
+  
+      private static final String DEFAULT_PROPERTIES = "defaultProperties";
+  
+      public static final String ACTIVE_PROFILES_PROPERTY = "spring.profiles.active";
+  
+      public static final String INCLUDE_PROFILES_PROPERTY = "spring.profiles.include";
+  
+      static {
+          Set<String> filteredProperties = new HashSet<>();
+          filteredProperties.add("spring.profiles.active");
+          filteredProperties.add("spring.profiles.include");
+          LOAD_FILTERED_PROPERTY = Collections.unmodifiableSet(filteredProperties);
+      }
+  
+      // 入口
+      @Override
+      public void postProcessEnvironment(ConfigurableEnvironment environment, SpringApplication application) {
+          addPropertySources(environment, application.getResourceLoader());
+      }
+  
+      protected void addPropertySources(ConfigurableEnvironment environment, ResourceLoader resourceLoader) {
+          // 在systemEnvironment属性源之后添加能够获取随机数的属性源，属性源的名称为"random"
+          RandomValuePropertySource.addToEnvironment(environment);
+          // 加载
+          new Loader(environment, resourceLoader).load();
+      }
+  
+  
+      private class Loader {
+          private final ConfigurableEnvironment environment;
+  
+          private final PropertySourcesPlaceholdersResolver placeholdersResolver;
+  
+          private final ResourceLoader resourceLoader;
+  
+          private final List<PropertySourceLoader> propertySourceLoaders;
+  
+          private Deque<Profile> profiles;
+  
+          Loader(ConfigurableEnvironment environment, ResourceLoader resourceLoader) {
+              this.environment = environment;
+              this.placeholdersResolver = new PropertySourcesPlaceholdersResolver(this.environment);
+              this.resourceLoader = (resourceLoader != null) ? resourceLoader : new DefaultResourceLoader();
+  
+              // 这里非常关键，到spring.factories中找key为org.springframework.boot.env.PropertySourceLoader的属性源加载器,
+              // 括号中的内容代表该PropertySourceLoader所在的spring.factories文件所在的jar文件，按照执行顺序找到的实现如下：
+              // org.springframework.boot.env.PropertiesPropertySourceLoader  （spring-boot-2.2.1.RELEASE.jar）
+              // org.springframework.boot.env.YamlPropertySourceLoader       （spring-boot-2.2.1.RELEASE.jar）
+              this.propertySourceLoaders = SpringFactoriesLoader.loadFactories(PropertySourceLoader.class,
+                                                                               getClass().getClassLoader());
+          }
+  
+          // 实际处理逻辑：加载项目下的application.yml，，默认从["file:./config/", "file:./", "classpath:/config/", "classpath:/"]加载配置文件
+          void load() {
+              // environment包括springApplicationCommandLineArgs、configurationProperties、【bootstrap】、systemProperties、systemEnvironment属性源
+              FilteredPropertySource.apply(this.environment, 
+                                           DEFAULT_PROPERTIES,  // defaultProperties
+                                           LOAD_FILTERED_PROPERTY, // ["spring.profiles.active", "spring.profiles.include"]
+                                           (defaultProperties) -> {
+  
+                                               this.profiles = new LinkedList<>();
+                                               this.processedProfiles = new LinkedList<>();
+                                               this.activatedProfiles = false;
+                                               this.loaded = new LinkedHashMap<>();
+                                               // 确定哪些profile是启用的。
+                                               // 如果用户如果自己通过命令行参数、jvm系统属性、系统环境变量指定了"spring.profiles.active"
+                                               // 或"spring.profiles.include"属性值则不使用默认的profile，
+                                               // 否则表明用户没有明确指定启用哪些profile，那么就使用spring默认的profile，
+                                               // 用户设置可以覆盖spring默认设置
+                                               initializeProfiles();
+                                               // 有激活的环境，遍历激活的环境
+                                               while (!this.profiles.isEmpty()) {
+                                                   Profile profile = this.profiles.poll();
+                                                   // 判断是否是默认profile
+                                                   if (isDefaultProfile(profile)) {
+                                                       addProfileToEnvironment(profile.getName());
+                                                   }
+  
+                                                   // 重点：加载该环境的配置文件
+                                                   load(profile, this::getPositiveProfileFilter,
+                                                        addToLoaded(MutablePropertySources::addLast, false));
+                                                   this.processedProfiles.add(profile);
+                                               }
+                                               load(null, this::getNegativeProfileFilter, addToLoaded(MutablePropertySources::addFirst, true));
+                                               addLoadedPropertySources();
+                                               applyActiveProfiles(defaultProperties);
+                                           }
+                                          );
+          }
+  
+          private void initializeProfiles() {
+              // The default profile for these purposes is represented as null. We add it
+              // first so that it is processed first and has lowest priority.
+              this.profiles.add(null);
+              //  ACTIVE_PROFILES_PROPERTY常量的值为"spring.profiles.active"
+              // 从environment中取key为"spring.profiles.active"的值，若未找到返回空集合
+              Set<Profile> activatedViaProperty = getProfilesFromProperty(ACTIVE_PROFILES_PROPERTY);
+              // INCLUDE_PROFILES_PROPERTY常量的值为"spring.profiles.include"
+              // 从environment中取key为"spring.profiles.include"的值，若未找到返回空集合
+              Set<Profile> includedViaProperty = getProfilesFromProperty(INCLUDE_PROFILES_PROPERTY);
+              // 从environment中找到profile名称不在activatedViaProperty及includedViaProperty集合内的已激活的profile的名称
+              List<Profile> otherActiveProfiles = getOtherActiveProfiles(activatedViaProperty, includedViaProperty);
+              this.profiles.addAll(otherActiveProfiles);
+              // Any pre-existing active profiles set via property sources (e.g.
+              // System properties) take precedence over those added in config files.
+              this.profiles.addAll(includedViaProperty);
+              addActiveProfiles(activatedViaProperty);
+              // 如果用户如果自己通过命令行参数、jvm系统属性、系统环境变量指定了"spring.profiles.active"或"spring.profiles.include"属性值
+              // 则不使用默认的profile，否则表明用户没有明确指定启用哪些profile，那么就使用spring默认的profile，用户设置可以覆盖spring默认设置
+              if (this.profiles.size() == 1) { // profiles集合中只包含1个null元素
+                  // 获取默认profile的名称，this.environment.getDefaultProfiles()方法默认返回字符串"default"
+                  for (String defaultProfileName : this.environment.getDefaultProfiles()) {
+                      // 创建name为"default"的Profile对象
+                      Profile defaultProfile = new Profile(defaultProfileName, true);
+                      // 将默认profile加到profiles中，此时profiles集合变成 [ null, 名称为"default"的Profile对象 ]
+                      this.profiles.add(defaultProfile);
+                  }
+              }
+          }
+  
+          private Set<Profile> getProfilesFromProperty(String profilesProperty) {
+              if (!this.environment.containsProperty(profilesProperty)) {
+                  return Collections.emptySet();
+              }
+              Binder binder = Binder.get(this.environment);
+              Set<Profile> profiles = getProfiles(binder, profilesProperty);
+              return new LinkedHashSet<>(profiles);
+          }
+  
+          private void load(Profile profile, DocumentFilterFactory filterFactory, DocumentConsumer consumer) {
+              // 确定从哪些位置搜索配置文件，默认从["file:./config/", "file:./", "classpath:/config/", "classpath:/"]搜索配置文件
+              getSearchLocations() 
+                  // 遍历每个搜索路径
+                  .forEach((location) -> {
+                      // 判断搜索路径是否是以"/"结尾的，如果是说明指定的目录，否则说明指定的搜索路径精确到具体文件名了
+                      boolean isFolder = location.endsWith("/");
+                      // NO_SEARCH_NAMES集合默认只有1个null元素
+                      // 如果location路径是文件夹，在用户没有明确指定"spring.config.name"属性的情况下，
+                      // 对于spring boot返回的是["application"]，对于spring cloud返回的是["bootstrap"]
+                      Set<String> names = isFolder ? getSearchNames() : NO_SEARCH_NAMES;
+                      // 重点：根据names循环加载可能的配置文件
+                      names.forEach((name) -> load(location, name, profile, filterFactory, consumer));
+                  });
+          }
+  
+          private void load(String location, String name, Profile profile, DocumentFilterFactory filterFactory,
+                            DocumentConsumer consumer) {
+              // 判断name是否有值
+              if (!StringUtils.hasText(name)) {
+                  for (PropertySourceLoader loader : this.propertySourceLoaders) {
+                      if (canLoadFileExtension(loader, location)) {
+                          load(loader, location, profile, filterFactory.getDocumentFilter(profile), consumer);
+                          return;
+                      }
+                  }
+                  throw new IllegalStateException("File extension of config file location '" + location
+                                                  + "' is not known to any PropertySourceLoader. If the location is meant to reference "
+                                                  + "a directory, it must end in '/'");
+              }
+              Set<String> processed = new HashSet<>();
+  
+              // this.propertySourceLoaders的值是在Loader类的构造方法中通过
+              // SpringFactoriesLoader.loadFactories(PropertySourceLoader.class, getClass().getClassLoader())初始化的。
+  
+              // this.propertySourceLoaders集合属性值按照顺序包括:
+              // org.springframework.boot.env.PropertiesPropertySourceLoader
+              // org.springframework.boot.env.YamlPropertySourceLoader
+              for (PropertySourceLoader loader : this.propertySourceLoaders) {
+                  // loader.getFileExtensions()方法返回值分如下2种情况：
+                  // 对于org.springframework.boot.env.PropertiesPropertySourceLoader返回 ["properties", "xml"]
+                  // 对于org.springframework.boot.env.YamlPropertySourceLoader返回 ["yml", "yaml"]
+                  for (String fileExtension : loader.getFileExtensions()) {
+                      if (processed.add(fileExtension)) {
+                          // 核心方法：加载spring boot、spring cloud的配置文件
+                          loadForFileExtension(loader, location + name, "." + fileExtension, profile, filterFactory,
+                                               consumer);
+                      }
+                  }
+              }
+          }
+  
+          /**
+          *
+          * @param loader 属性加载器，PropertiesPropertySourceLoader或YamlPropertySourceLoader
+          * @param prefix 不包括扩展名的路径，例如"file:./config/bootstrap"、"classpath:./config/application"、"classpath:/application"等
+          * @param fileExtension 文件扩展名，例如".yml"、".yaml"、".properties"、".xml"
+          * @param profile 启用的环境 
+          *
+          */
+          private void loadForFileExtension(PropertySourceLoader loader, String prefix, String fileExtension,
+                                            Profile profile, DocumentFilterFactory filterFactory, DocumentConsumer consumer) {
+              DocumentFilter defaultFilter = filterFactory.getDocumentFilter(null);
+              DocumentFilter profileFilter = filterFactory.getDocumentFilter(profile);
+              if (profile != null) {
+                  // 加载特定环境的配置文件
+                  // 例如"file:./config/bootstrap-default.yml" 、"classpath:/application-default.yml"
+                  String profileSpecificFile = prefix + "-" + profile + fileExtension;
+                  load(loader, profileSpecificFile, profile, defaultFilter, consumer);
+                  load(loader, profileSpecificFile, profile, profileFilter, consumer);
+                  // Try profile specific sections in files we've already processed
+                  for (Profile processedProfile : this.processedProfiles) {
+                      if (processedProfile != null) {
+                          String previouslyLoaded = prefix + "-" + processedProfile + fileExtension;
+                          load(loader, previouslyLoaded, profile, profileFilter, consumer);
+                      }
+                  }
+              }
+              // 加载常规配置文件
+              // 例如"file:./config/bootstrap.yml" 、"classpath:/application.yml"
+              load(loader, prefix + fileExtension, profile, profileFilter, consumer);
+          }
+          
+          private void load(PropertySourceLoader loader, String location, Profile profile, DocumentFilter filter,
+  				DocumentConsumer consumer) {
+  			try {
+                    // 真正加载配置文件了
+  				Resource resource = this.resourceLoader.getResource(location);
+  				if (resource == null || !resource.exists()) {
+  					if (this.logger.isTraceEnabled()) {
+  						StringBuilder description = getDescription("Skipped missing config ", location, resource,
+  								profile);
+  						this.logger.trace(description);
+  					}
+  					return;
+  				}
+  				if (!StringUtils.hasText(StringUtils.getFilenameExtension(resource.getFilename()))) {
+  					if (this.logger.isTraceEnabled()) {
+  						StringBuilder description = getDescription("Skipped empty config extension ", location,
+  								resource, profile);
+  						this.logger.trace(description);
+  					}
+  					return;
+  				}
+  				String name = "applicationConfig: [" + location + "]";
+  				List<Document> documents = loadDocuments(loader, name, resource);
+  				if (CollectionUtils.isEmpty(documents)) {
+  					if (this.logger.isTraceEnabled()) {
+  						StringBuilder description = getDescription("Skipped unloaded config ", location, resource,
+  								profile);
+  						this.logger.trace(description);
+  					}
+  					return;
+  				}
+  				List<Document> loaded = new ArrayList<>();
+  				for (Document document : documents) {
+  					if (filter.match(document)) {
+  						addActiveProfiles(document.getActiveProfiles());
+  						addIncludedProfiles(document.getIncludeProfiles());
+  						loaded.add(document);
+  					}
+  				}
+  				Collections.reverse(loaded);
+  				if (!loaded.isEmpty()) {
+  					loaded.forEach((document) -> consumer.accept(profile, document));
+  					if (this.logger.isDebugEnabled()) {
+  						StringBuilder description = getDescription("Loaded config file ", location, resource, profile);
+  						this.logger.debug(description);
+  					}
+  				}
+  			}
+  			catch (Exception ex) {
+  				throw new IllegalStateException("Failed to load property source from location '" + location + "'", ex);
+  			}
+  		}
+  
+          // 确定从哪些位置搜索配置文件
+          private Set<String> getSearchLocations() {
+              // CONFIG_LOCATION_PROPERTY常量值为"spring.config.location"
+              // 这里的意图是判断用户是否通过命令行参数、系统属性、系统环境变量指定了"spring.config.location"属性值
+              // 如果指定了"spring.config.location"属性值则使用用户指定的配置文件路径
+              if (this.environment.containsProperty(CONFIG_LOCATION_PROPERTY)) {
+                  return getSearchLocations(CONFIG_LOCATION_PROPERTY);
+              }
+  
+              // CONFIG_ADDITIONAL_LOCATION_PROPERTY常量值为"spring.config.additional-location"
+              // 这里的意图是判断命令行参数、系统属性、系统环境变量是否指定了"spring.config.additional-location"属性值
+              // 如果指定了说明除了要解析默认的配置文件路径外，还要额外解析指定位置的配置文件，这就是additional-location所表达的意思
+              Set<String> locations = getSearchLocations(CONFIG_ADDITIONAL_LOCATION_PROPERTY);
+  
+              // DEFAULT_SEARCH_LOCATIONS常量值为"classpath:/,classpath:/config/,file:./,file:./config/"
+              locations.addAll(
+                  // ConfigFileApplicationListener.this.searchLocations默认为null
+                  // asResolvedSet返回值为集合["file:./config/", "file:./", "classpath:/config/", "classpath:/"]
+                  asResolvedSet(ConfigFileApplicationListener.this.searchLocations, DEFAULT_SEARCH_LOCATIONS));
+              return locations;
+          }
+  
+          private Set<String> getSearchLocations(String propertyName) {
+              Set<String> locations = new LinkedHashSet<>();
+              // 判断environment环境中是否包含指定属性
+              if (this.environment.containsProperty(propertyName)) {
+                  for (String path : asResolvedSet(this.environment.getProperty(propertyName), null)) {
+                      if (!path.contains("$")) {
+                          path = StringUtils.cleanPath(path);
+                          if (!ResourceUtils.isUrl(path)) {
+                              // ResourceUtils.FILE_URL_PREFIX常量值为"file:"
+                              path = ResourceUtils.FILE_URL_PREFIX + path;
+                          }
+                      }
+                      locations.add(path);
+                  }
+              }
+              return locations;
+          }
+  
+          // 确定配置文件的名称
+          private Set<String> getSearchNames() {
+              // CONFIG_NAME_PROPERTY常量值为"spring.config.name"
+              // 这里的意图是判断用户是否通过命令行参数、系统属性、系统环境变量指定了"spring.config.name"属性
+  
+              // 特别注意spring cloud的BootstrapApplicationListener中的bootstrapServiceContext()方法中，
+              // 创建的environment添加了1个名称为bootstrap的属性源，该属性源中就指定了"spring.config.name"属性值为"bootstrap"
+              if (this.environment.containsProperty(CONFIG_NAME_PROPERTY)) {
+                  // 用户指定了"spring.config.name"属性，获取属性值
+                  String property = this.environment.getProperty(CONFIG_NAME_PROPERTY);
+                  // 对属性值以逗号分隔，返回倒序集合，例如用户通过命令行参数指定属性-D"spring.config.name=application.yml,config.yml"
+                  // 则返回["config.yml", "application.yml"]
+                  return asResolvedSet(property, null);
+              }
+  
+              // DEFAULT_NAMES常量值为"application", ConfigFileApplicationListener.this.names属性默认值为null
+              // 运行到这里说明用户没有指定"spring.config.name"属性，那么使用默认配置文件名称"application"
+              return asResolvedSet(ConfigFileApplicationListener.this.names, DEFAULT_NAMES);
+          }
+  
+          /**
+          * 如果value为空则使用后备值fallback，否则从environment中解析value中的占位符，然后按逗号分隔并反转
+          * 例如：value为null, fallback为"classpath:/,classpath:/config/,file:./,file:./config/"，则返回
+          * 集合["file:./config/", "file:./", "classpath:/config/", "classpath:/"]
+          */
+          private Set<String> asResolvedSet(String value, String fallback) {
+              // 以逗号分隔的字符串分割转集合
+              List<String> list = Arrays.asList(StringUtils.trimArrayElements(StringUtils.commaDelimitedListToStringArray(
+                  (value != null) ? this.environment.resolvePlaceholders(value) : fallback)));
+              // 对集合反转
+              Collections.reverse(list);
+              return new LinkedHashSet<>(list);
+          }
+      }
+  }
+  ```
+
+  `FilteredPropertySource`源码
+
+  ```java
+  package org.springframework.boot.context.config;
+  
+  import java.util.Set;
+  import java.util.function.Consumer;
+  
+  import org.springframework.core.env.ConfigurableEnvironment;
+  import org.springframework.core.env.MutablePropertySources;
+  import org.springframework.core.env.PropertySource;
+  
+  /**
+   * Internal {@link PropertySource} implementation used by
+   * {@link ConfigFileApplicationListener} to filter out properties for specific operations.
+   *
+   * @author Phillip Webb
+   */
+  class FilteredPropertySource extends PropertySource<PropertySource<?>> {
+  
+      private final Set<String> filteredProperties;
+  
+      FilteredPropertySource(PropertySource<?> original, Set<String> filteredProperties) {
+          super(original.getName(), original);
+          this.filteredProperties = filteredProperties;
+      }
+  
+      @Override
+      public Object getProperty(String name) {
+          if (this.filteredProperties.contains(name)) {
+              return null;
+          }
+          return getSource().getProperty(name);
+      }
+  
+      /**
+      *
+      * @parma environment spring boot/cloud的环境对象，包含了springApplicationCommandLineArgs、
+      *                     configurationProperties、【bootstrap】、systemProperties、systemEnvironment属性源
+      *                     
+      * @param propertySourceName 字符串"defaultProperties"
+      * @parm  filteredProperties 集合["spring.profiles.active", "spring.profiles.include"]
+      * @param operation 消费者
+      * 
+      */
+      static void apply(ConfigurableEnvironment environment, String propertySourceName, Set<String> filteredProperties,
+                        Consumer<PropertySource<?>> operation) {
+          MutablePropertySources propertySources = environment.getPropertySources();
+          // 获取name为"defaultProperties"的属性源
+          PropertySource<?> original = propertySources.get(propertySourceName);
+          if (original == null) {
+              operation.accept(null);
+              return;
+          }
+          propertySources.replace(propertySourceName, new FilteredPropertySource(original, filteredProperties));
+          try {
+              operation.accept(original);
+          }
+          finally {
+              propertySources.replace(propertySourceName, original);
+          }
+      }
+  
+  }
+  
+  ```
+
+  
+
+- `DebugAgentEnvironmentPostProcessor`
 
 ### 3.6.5、绑定ConfigurableEnvironment到当前的SpringApplication实例中
 
@@ -1517,8 +2641,17 @@ public class SpringApplication {
         // 3.11.2、ConfigurableApplicationContext创建后的后置处理逻辑
         postProcessApplicationContext(context);
         // 3.11.3、回调所有ApplicationContextInitializer的实现类的initialize(ConfigurableApplicationContext context)方法
+        // org.springframework.boot.context.config.DelegatingApplicationContextInitializer  （spring-boot-2.2.1.RELEASE.jar）
+        // org.springframework.boot.autoconfigure.SharedMetadataReaderFactoryContextInitializer （spring-boot-autoconfigure-2.2.1.RELEASE.jar）
+        // org.springframework.boot.context.ContextIdApplicationContextInitializer 				（spring-boot-2.2.1.RELEASE.jar）
+        // org.springframework.boot.context.ConfigurationWarningsApplicationContextInitializer （spring-boot-2.2.1.RELEASE.jar）
+        // org.springframework.boot.rsocket.context.RSocketPortInfoApplicationContextInitializer （spring-boot-2.2.1.RELEASE.jar）
+        // org.springframework.boot.web.context.ServerPortInfoApplicationContextInitializer （spring-boot-2.2.1.RELEASE.jar）
+        // org.springframework.boot.autoconfigure.logging.ConditionEvaluationReportLoggingListener （spring-boot-autoconfigure-2.2.1.RELEASE.jar）
         applyInitializers(context);
         // 3.11.4、发布ApplicationContextInitializedEvent事件
+        // org.springframework.boot.autoconfigure.BackgroundPreinitializer （spring-boot-autoconfigure-2.2.1.RELEASE.jar）
+        // org.springframework.boot.context.config.DelegatingApplicationListener  （spring-boot-2.2.1.RELEASE.jar）
         listeners.contextPrepared(context);
         // 3.11.5、是否打印启动信息
         if (this.logStartupInfo) {
@@ -1532,6 +2665,7 @@ public class SpringApplication {
             beanFactory.registerSingleton("springBootBanner", printedBanner);
         }
         if (beanFactory instanceof DefaultListableBeanFactory) {
+            // 注册bean时是否允许覆盖容器中已存在该名称的bean
             ((DefaultListableBeanFactory) beanFactory)
             .setAllowBeanDefinitionOverriding(this.allowBeanDefinitionOverriding);
         }
