@@ -109,7 +109,7 @@ $(function () {
   function openSidebar () {
     $('#page-header').addClass('open-sidebar')
     $('body').animate({
-      paddingLeft: 300
+      paddingLeft: 400
     }, 400)
     $('#sidebar').css('transform', 'translateX(300px)')
     $('#toggle-sidebar').css({

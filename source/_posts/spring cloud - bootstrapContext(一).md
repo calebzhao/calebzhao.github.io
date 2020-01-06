@@ -468,8 +468,11 @@ public class PropertySourceBootstrapConfiguration implements
 
     @Override
     public void initialize(ConfigurableApplicationContext applicationContext) {
+        // 创建1个具有复合功能的属性源
         CompositePropertySource composite = new OriginTrackedCompositePropertySource(BOOTSTRAP_PROPERTY_SOURCE_NAME);
+        // 对propertySourceLocators排序
         AnnotationAwareOrderComparator.sort(this.propertySourceLocators);
+        // 一个flag, 标识是否加载到外部属性源
         boolean empty = true;
         // 此处为子级的环境变量对象
         ConfigurableEnvironment environment = applicationContext.getEnvironment();
@@ -477,20 +480,25 @@ public class PropertySourceBootstrapConfiguration implements
          // 通过PropertySourceLocator接口去加载外部配置
         for (PropertySourceLocator locator : this.propertySourceLocators) {
             PropertySource<?> source = null;
-            // 加载外部配置
+            // 重点：加载外部配置， spring cloud config、nacos的集合就是通过PropertySourceLocator来实现的
             source = locator.locate(environment);
             if (source == null) {
                 continue;
             }
             logger.info("Located property source: " + source);
+            // 把从外部环境加载到的属性源加到前面定义的复合属性源中
             composite.addPropertySource(source);
             empty = false;
         }
+        // 判断是否从外部环境加载到任何1个属性源
         if (!empty) {
+            // 获取spring boot的可变属性源
             MutablePropertySources propertySources = environment.getPropertySources();
             String logConfig = environment.resolvePlaceholders("${logging.config:}");
             LogFile logFile = LogFile.get(environment);
+            // 判断spring boot的environment中是否存在name为"bootstrapProperties"的属性源
             if (propertySources.contains(BOOTSTRAP_PROPERTY_SOURCE_NAME)) {
+                // 移除spring boot的environment中name为"bootstrapProperties"的属性源
                 propertySources.remove(BOOTSTRAP_PROPERTY_SOURCE_NAME);
             }
             // 确定属性读取的先后顺序
