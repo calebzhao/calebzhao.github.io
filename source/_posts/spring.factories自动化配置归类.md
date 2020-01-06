@@ -24,21 +24,21 @@ categories: spring boot
 
 - ```spring-cloud-context-2.2.0.RELEASE.jar!\META-INF\spring.factories``` 共4个
 
-```
+    ```properties
 
-# Bootstrap components
-org.springframework.cloud.bootstrap.BootstrapConfiguration=\
-org.springframework.cloud.bootstrap.config.PropertySourceBootstrapConfiguration,\
-org.springframework.cloud.bootstrap.encrypt.EncryptionBootstrapConfiguration,\
-org.springframework.cloud.autoconfigure.ConfigurationPropertiesRebinderAutoConfiguration,\
-org.springframework.boot.autoconfigure.context.PropertyPlaceholderAutoConfiguration
-```
+    # Bootstrap components
+    org.springframework.cloud.bootstrap.BootstrapConfiguration=\
+    org.springframework.cloud.bootstrap.config.PropertySourceBootstrapConfiguration,\
+    org.springframework.cloud.bootstrap.encrypt.EncryptionBootstrapConfiguration,\
+    org.springframework.cloud.autoconfigure.ConfigurationPropertiesRebinderAutoConfiguration,\
+    org.springframework.boot.autoconfigure.context.PropertyPlaceholderAutoConfiguration
+    ```
 
 
 
 - ```spring-cloud-netflix-eureka-client-2.2.0.RELEASE.jar!\META-INF\spring.factories```共1个
 
-  ```
+  ```properties
   org.springframework.cloud.bootstrap.BootstrapConfiguration=\
   org.springframework.cloud.netflix.eureka.config.EurekaDiscoveryClientConfigServiceBootstrapConfiguration
   ```

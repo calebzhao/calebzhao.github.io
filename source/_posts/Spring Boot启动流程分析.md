@@ -1533,14 +1533,13 @@ private ConfigurableApplicationContext bootstrapServiceContext(
 
     // 创建spring cloud的属性源的数据源，后面会把这个map加进去spring cloud的environment中
     Map<String, Object> bootstrapMap = new HashMap<>();
+    // 特别注意："spring.config.name"是用于加载配置文件的名称，默认为bootstrap，
+    // 在ConfigFileApplicationListener事件中会获取属性为"spring.config.name"的值作为配置文件的名称去加载配置文件
     bootstrapMap.put("spring.config.name", configName);
-    // if an app (or test) uses spring.main.web-application-type=reactive, bootstrap
-    // will fail
-    // force the environment to use none, because if though it is set below in the
-    // builder
-    // the environment overrides it
     bootstrapMap.put("spring.main.web-application-type", "none");
     if (StringUtils.hasText(configLocation)) {
+        // 特别注意："spring.config.location"是用于加载配置文件的搜索路径，默认为空，
+        // 在ConfigFileApplicationListener事件中会获取属性为"spring.config.location"的值，从该路径下去加载配置文件
         bootstrapMap.put("spring.config.location", configLocation);
     }
     // 为spring cloud的environment添加name为"bootstrap"的属性源，属性源中包括2个属性"spring.config.name"及"spring.config.location"
@@ -1560,8 +1559,10 @@ private ConfigurableApplicationContext bootstrapServiceContext(
     // 创建spring cloud自身的SpringApplication了，
     // SpringApplicationBuilder的构造方法会创建SpringApplication对象（又获取ApplicationContextInitializer和ApplicationListener）
     SpringApplicationBuilder builder = new SpringApplicationBuilder()
-        // 指定激活的环境，关系banner输出
-        .profiles(environment.getActiveProfiles()).bannerMode(Mode.OFF)
+        // 指定激活的环境，此处activeProfiles是通过系统变量"spring.profiles.active"设置的
+        .profiles(environment.getActiveProfiles())
+        // 关闭banner输出
+        .bannerMode(Mode.OFF)
         // 设置spring cloud的环境，设置后在调用run()方法时就不会再创建了
         // 这里可以回顾下SpringApplication.getOrCreateEnvironment()方法的实现
         .environment(bootstrapEnvironment)
@@ -1606,6 +1607,7 @@ private ConfigurableApplicationContext bootstrapServiceContext(
     addAncestorInitializer(application, context);
     // spring cloud的环境中现在有一些属性是我们不想在父ApplicationContext中看到的，所以把它移除(稍后会添加回来)
     bootstrapProperties.remove(BOOTSTRAP_PROPERTY_SOURCE_NAME);
+    // 合并spring cloud中name为"defaultProperties"属性源至spring boot中，注意同名属性不覆盖
     mergeDefaultProperties(environment.getPropertySources(), bootstrapProperties);
     // 返回spring cloud的ApplicationContext
     return context;
@@ -1631,6 +1633,59 @@ private void addAncestorInitializer(SpringApplication application,
         application.addInitializers(new AncestorInitializer(context));
     }
 
+}
+
+/**
+* 这个方法的目的如下：
+* 1、如果spring cloud中有name为"springCloudDefaultProperties"的属性源，而spring boot中没有该名称的属性源，则直接把
+*    spring cloud的name为"springCloudDefaultProperties"的属性源加到spring boot的environment的末尾。
+*
+* 2、如果spring cloud中有name为"springCloudDefaultProperties"的属性源，spring boot中也有该名称的属性源，则把spring cloud
+*    的属性源合并到spring boot的environment中，如果在spring cloud中的属性在spring boot中不存在则追加到spring boot中，特别注意
+*    如果spring cloud中的属性在spring boot中也存在，则不会覆盖，也就是说spring boot和spring cloud拥有相同key的属性时，spring boot的
+*    配置文件中的属性优先级高，不会合并该属性。
+* 
+* @param environment 它是spring boot的environment
+* @param bootstrap 它是spring cloud的environment
+*/
+private void mergeDefaultProperties(MutablePropertySources environment,
+                                    MutablePropertySources bootstrap) {
+    String name = DEFAULT_PROPERTIES;
+    // 判断spring cloud中是否有name为"springCloudDefaultProperties"的属性源
+    if (bootstrap.contains(name)) {
+        // 获得spring cloud中name为"springCloudDefaultProperties"的属性源
+        PropertySource<?> source = bootstrap.get(name);
+        // 判断spring boot中是否有name为"springCloudDefaultProperties"的属性源
+        if (!environment.contains(name)) {
+            // 如果spring cloud中有name为"springCloudDefaultProperties"的属性源，而spring boot中没有该名称的属性源，则直接把
+            // spring cloud的name为"springCloudDefaultProperties"的属性源加到spring boot的environment的末尾
+            environment.addLast(source);
+        }
+        // spring cloud中有name为"springCloudDefaultProperties"的属性源，spring boot中也有该名称的属性源
+        else {
+            // 获得spring boot中name为"springCloudDefaultProperties"的属性源
+            PropertySource<?> target = environment.get(name);
+            // 判断spring boot和spring cloud的name为"springCloudDefaultProperties"的属性源的类型是否是MapPropertySource类型
+            if (target instanceof MapPropertySource && target != source
+                && source instanceof MapPropertySource) {
+                // 获得spring boot中name为"springCloudDefaultProperties"的属性源的底层数据源
+                Map<String, Object> targetMap = ((MapPropertySource) target).getSource();
+                // 获得spring cloud中name为"springCloudDefaultProperties"的属性源的底层数据源
+                Map<String, Object> map = ((MapPropertySource) source).getSource();
+
+                // 遍历spring cloud中name为"springCloudDefaultProperties"的属性源的底层数据源
+                for (String key : map.keySet()) {
+                    // 判断spring cloud中的属性在spring boot是否存在，若spring cloud中的属性在spring boot中不存在则追加到spring boot中 
+                    if (!target.containsProperty(key)) {
+                        targetMap.put(key, map.get(key));
+                    }
+
+                    // 若spring cloud中的属性在spring boot中存在则忽略，spring cloud不覆盖spring boot的同名属性
+                }
+            }
+        }
+    }
+    mergeAdditionalPropertySources(environment, bootstrap);
 }
 ```
 
@@ -1660,6 +1715,8 @@ org.springframework.cloud.bootstrap.BootstrapApplicationListener
 
 
 #### 3.6.4.4、ConfigFileApplicationListener
+
+该类的作用是加载配置文件
 
 ```java
 public class ConfigFileApplicationListener implements EnvironmentPostProcessor, SmartApplicationListener, Ordered {
@@ -1968,13 +2025,13 @@ public class ConfigFileApplicationListener implements EnvironmentPostProcessor, 
                                                this.processedProfiles = new LinkedList<>();
                                                this.activatedProfiles = false;
                                                this.loaded = new LinkedHashMap<>();
-                                               // 确定哪些profile是启用的。
+                                               // 1.把环境中的profiles取出来，默认会增加1个为null的profile
                                                // 如果用户如果自己通过命令行参数、jvm系统属性、系统环境变量指定了"spring.profiles.active"
                                                // 或"spring.profiles.include"属性值则不使用默认的profile，
                                                // 否则表明用户没有明确指定启用哪些profile，那么就使用spring默认的profile，
                                                // 用户设置可以覆盖spring默认设置
                                                initializeProfiles();
-                                               // 有激活的环境，遍历激活的环境
+                                                // 2.循环处理profiles，查找文件位置然后去加载文件
                                                while (!this.profiles.isEmpty()) {
                                                    Profile profile = this.profiles.poll();
                                                    // 判断是否是默认profile
