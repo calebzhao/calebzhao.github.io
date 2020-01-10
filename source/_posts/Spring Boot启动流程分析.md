@@ -592,7 +592,7 @@ public class EventPublishingRunListener implements SpringApplicationRunListener,
 
 需要注意的是这里是一个典型的**观察者模式**的应用，```SpringApplication```是被观察者，```ApplicationListener```接口的实现是观察者，spring启动时从```spring.factories```文件中根据找出所有的key为```org.springframework.context.ApplicationListener```的```ApplicationListener```接口的实现(观察者)，然后在```EventPublishingRunListener```类的构造方法将所有的ApplicationListener接口的实现(观察者)注册到类型为```SimpleApplicationEventMulticaster```的initialMulticaster属性中，而```SpringApplication```的run方法中又持有了EventPublishingRunListener这个类的引用(```  SpringApplicationRunListeners listeners = getRunListeners(args);```)，所以在```SpringApplication```是中可以通过listeners.starting()方法调用委托给真正的```SimpleApplicationEventMulticaster```进行事件发布。
 
-### 3.4.5、SimpleApplicationEventMulticaster.multicastEvent(ApplicationEvent event)
+### 3.4.5、SimpleApplicationEventMulticaster
 
 SimpleApplicationEventMulticaster类的作用时真正的发布事件(ApplicationEvent event)。
 
@@ -1266,7 +1266,7 @@ public class EventPublishingRunListener implements SpringApplicationRunListener,
 
 
 
-#### 3.6.4.1、SimpleApplicationEventMulticaster.multicastEvent(ApplicationEvent event)
+#### 3.6.4.1、SimpleApplicationEventMulticaster
 
 SimpleApplicationEventMulticaster类的作用时真正的发布事件(ApplicationEvent event)。
 

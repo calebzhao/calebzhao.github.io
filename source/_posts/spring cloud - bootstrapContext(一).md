@@ -449,6 +449,10 @@ public class BootstrapImportSelector implements EnvironmentAware, DeferredImport
 直接看下主要的代码片段吧
 
 ```java
+/**
+* spring cloud通过 PropertySourceLocator 加载外部环境属性源
+*
+*/
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(PropertySourceBootstrapProperties.class)
 public class PropertySourceBootstrapConfiguration implements
@@ -459,6 +463,7 @@ public class PropertySourceBootstrapConfiguration implements
 
     private int order = Ordered.HIGHEST_PRECEDENCE + 10;
 
+    // 注意这里注入了PropertySourceLocator
     @Autowired(required = false)
     private List<PropertySourceLocator> propertySourceLocators = new ArrayList<>();
 
@@ -503,14 +508,253 @@ public class PropertySourceBootstrapConfiguration implements
             }
             // 确定属性读取的先后顺序
             insertPropertySources(propertySources, composite);
+            // 日志相关，不管
             reinitializeLoggingSystem(environment, logConfig, logFile);
+            // 设置日志级别，不管
             setLogLevels(applicationContext, environment);
             handleIncludedProfiles(environment);
         }
     }
+    
+    /**
+    * 将远程属性源以适合的顺序插入到本地environment中：
+    * 插入前要确定远程属性源与本地属性源的优先级哪个高(属性读取的先后顺序)，也就是通过key获取value时先读取谁的配置。
+    *
+    * 这里的相关代码与spring.cloud.config.allowOverride、spring.cloud.config.overrideNone、spring.cloud.config.overrideSystemProperties配置相关
+    *
+    * @param propertySources 它是spring boot的可变属性源
+    * @parm composite 复合属性源，里面的属性源是spring cloud从外部环境加载到的
+    */
+    private void insertPropertySources(MutablePropertySources propertySources,
+			CompositePropertySource composite) {
+         // 将从外部环境加载的属性源添加到新创建的可变属性源中
+		MutablePropertySources incoming = new MutablePropertySources();
+		incoming.addFirst(composite);
+        
+         // 从外部环境加载的属性源中获取key为"spring.cloud.config"的值，并将其值封装到PropertySourceBootstrapProperties类中
+		PropertySourceBootstrapProperties remoteProperties = new PropertySourceBootstrapProperties();
+		Binder.get(environment(incoming)).bind("spring.cloud.config", Bindable.ofInstance(remoteProperties));
+         // 关键代码了， 如果配置影响了远程配置与本地配置的优先级：
+         // spring.cloud.config.allowOverride=true
+         // spring.cloud.config.overrideNone=true
+         // spring.cloud.config.overrideSystemProperties=false
+        
+         // remoteProperties.isAllowOverride() 
+         // 1、远程配置是否允许被本地配置覆盖（是否允许允许本地属性配置覆盖远程属性配置）
+        
+         //  remoteProperties.isOverrideNone()
+         // 2、远程配置允许被本地配置覆盖的情况下，判断远程属性的任意配置是否都允许被本地配置覆盖
+        
+         // remoteProperties.isOverrideSystemProperties()
+         // 3、远程配置允许被本地配置覆盖的情况下，远程属性不能被本地配置任意覆盖， 再判断远程配置是否可以覆盖本地系统环境变量
+		if (! remoteProperties.isAllowOverride() 
+            	||  (!remoteProperties.isOverrideNone() && remoteProperties.isOverrideSystemProperties())) {
+            
+			propertySources.addFirst(composite);
+			return;
+		}
+         // 判断远程属性的任意配置是否都允许被本地配置覆盖
+		if (remoteProperties.isOverrideNone()) {
+             // 运行到这里说明：远程属性的任意配置都允许被本地配置覆盖， 也就是说远程配置的优先级低于本地配置，
+             // 那么把远程配置添加到environment的最后(属性源的位置越靠前代表其优先级越高，越靠后则优先级越低)
+			propertySources.addLast(composite);
+			return;
+		}
+        
+         // 本地环境是否包含系统环境变量属性源， SYSTEM_ENVIRONMENT_PROPERTY_SOURCE_NAME常量的值为"systemEnvironment"
+		if (propertySources
+				.contains(StandardEnvironment.SYSTEM_ENVIRONMENT_PROPERTY_SOURCE_NAME)) {
+             // 远程配置是否可以覆盖本地系统环境变量配置
+			if (!remoteProperties.isOverrideSystemProperties()) {
+                  // 远程配置不能覆盖本地系统环境变量配置，也就是说本地系统环境变量的优先级高于远程配置，
+                  // 那么把远程属性源添加在本地系统环境变量属性源的后面
+				propertySources.addAfter(
+						StandardEnvironment.SYSTEM_ENVIRONMENT_PROPERTY_SOURCE_NAME,
+						composite);
+			}
+			else {
+                 // 运行到这里表示远程配置可以覆盖本地系统环境变量，也就是说远程配置的优先级高于本地系统环境变量，
+                 // 那么把远程属性源添加到本地系统环境变量属性源的前面
+				propertySources.addBefore(
+						StandardEnvironment.SYSTEM_ENVIRONMENT_PROPERTY_SOURCE_NAME,
+						composite);
+			}
+		}
+		else {
+			propertySources.addLast(composite);
+		}
+	}
 
 }
 ```
 
+上述的代码就涉及两点：
+
+- 一个是通过*PropertySourceLocator*接口加载外部配置
+- 一个是用于解析以**spring.cloud.config**为开头的**PropertySourceBootstrapProperties**属性，默认情况下，外部配置比内部变量有更高的优先级。
 
 
+
+### 2.3.2、ConfigurationPropertiesRebinderAutoConfiguration
+
+通过命名便会发现其跟刷新属性的功能有关，先看下其类结构：
+
+```java
+@Configuration(proxyBeanMethods = false)
+@ConditionalOnBean(ConfigurationPropertiesBindingPostProcessor.class)
+public class ConfigurationPropertiesRebinderAutoConfiguration
+		implements ApplicationContextAware, SmartInitializingSingleton {
+    
+    
+}
+```
+
+ 上述代码表示其依据于当前类环境存在*ConfigurationPropertiesBindingPostProcessor*Bean这个bean才会被应用，仔细查阅了下，发现只要有使用到**@EnableConfigurationProperties**注解即就会被注册。看来此配置跟*ConfigurationProperties*注解也有一定的关联性。
+
+下面看看ConfigurationPropertiesBindingPostProcessor的源码：
+
+- ConfigurationPropertiesBindingPostProcessor
+
+  ```java
+  public class ConfigurationPropertiesBindingPostProcessor
+  		implements BeanPostProcessor, PriorityOrdered, ApplicationContextAware, InitializingBean {
+      
+      // ...省略代码
+      
+      // 实现了InitializingBean接口， 在bean的属性初始化后会调用该方法
+      @Override
+  	public void afterPropertiesSet() throws Exception {
+  		this.registry = (BeanDefinitionRegistry) this.applicationContext.getAutowireCapableBeanFactory();
+  		this.binder = ConfigurationPropertiesBinder.get(this.applicationContext);
+  	}
+      
+      // 实现了BeanPostProcessor
+      @Override
+  	public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
+  		bind(ConfigurationPropertiesBean.get(this.applicationContext, bean, beanName));
+  		return bean;
+  	}
+  
+  	private void bind(ConfigurationPropertiesBean bean) {
+  		if (bean == null || hasBoundValueObject(bean.getName())) {
+  			return;
+  		}
+  		Assert.state(bean.getBindMethod() == BindMethod.JAVA_BEAN, "Cannot bind @ConfigurationProperties for bean '"
+  				+ bean.getName() + "'. Ensure that @ConstructorBinding has not been applied to regular bean");
+  		try {
+  			this.binder.bind(bean);
+  		}
+  		catch (Exception ex) {
+  			throw new ConfigurationPropertiesBindException(bean, ex);
+  		}
+  	}
+  }
+  ```
+
+  本文就罗列笔者比较关注的几个地方
+
+  1.ConfigurationPropertiesRebinder对象的创建
+
+  ```java
+  @Bean
+  @ConditionalOnMissingBean(search = SearchStrategy.CURRENT)
+  public ConfigurationPropertiesRebinder configurationPropertiesRebinder(
+      ConfigurationPropertiesBeans beans) {
+      ConfigurationPropertiesRebinder rebinder = new ConfigurationPropertiesRebinder(
+          beans);
+      return rebinder;
+  }
+  ```
+
+  此类读者可以自行翻阅代码，可以发现其暴露了JMX接口以及监听了springcloud context自定义的*EnvironmentChangeEvent*事件。看来其主要用来刷新ApplicationContext上的beans(**含@ConfigurationProperties注解**)对象集合
+
+  2.ConfigurationPropertiesBeans对象的创建
+
+  BeanPostProcessor将PropertySources绑定到使用@ConfigurationProperties注释的bean。
+
+  ```java
+  @Bean
+  @ConditionalOnMissingBean(search = SearchStrategy.CURRENT)
+  public ConfigurationPropertiesBeans configurationPropertiesBeans() {
+      return new ConfigurationPropertiesBeans();
+  }
+  
+  ```
+
+  配合@ConfigurationProperties注解，其会缓存ApplicationContext上的所有含有*ConfigurationProperties*注解的bean。与第一点所提的**ConfigurationPropertiesRebinder**对象搭配使用
+
+  
+
+  3.实例化结束后刷新父级ApplicationContext上的属性
+
+  ```java
+  @Override
+  public void afterSingletonsInstantiated() {
+      // After all beans are initialized explicitly rebind beans from the parent
+      // so that changes during the initialization of the current context are
+      // reflected. In particular this can be important when low level services like
+      // decryption are bootstrapped in the parent, but need to change their
+      // configuration before the child context is processed.
+      if (this.context.getParent() != null) {
+          // TODO: make this optional? (E.g. when creating child contexts that prefer to
+          // be isolated.)
+          ConfigurationPropertiesRebinder rebinder = this.context
+              .getBean(ConfigurationPropertiesRebinder.class);
+          for (String name : this.context.getParent().getBeanDefinitionNames()) {
+              rebinder.rebind(name);
+          }
+      }
+  }
+  ```
+
+### 2.3.3、EncryptionBootstrapConfiguration
+
+与属性读取的加解密有关，跟JDK的keystore也有一定的关联，具体就不去解析了。读者可自行分析
+
+
+
+# 3、Bean加载问题
+
+此处本文插入这个Bean的加载问题，因为笔者发现SpringApplication会被调用两次，那么ApplicationContext实例也会被创建两次。那么基于*@Configuration*修饰过的自定义的Bean是不是也会被加载两次呢？？
+
+经过在cloud环境下编写了一个简单的Bean
+
+```java
+package com.example.clouddemo;
+
+import org.springframework.beans.BeansException;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
+import org.springframework.context.annotation.Configuration;
+
+/**
+ * @author nanco
+ * -------------
+ * -------------
+ * @create 19/8/20
+ */
+@Configuration
+public class TestApplication implements ApplicationContextAware {
+
+    @Override
+    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+        System.out.println("application parent context id: " + applicationContext.getParent().getId());
+        System.out.println("application context id: " + applicationContext.getId());
+    }
+}
+```
+
+且在application.properties文件中指定*spring.application.name=springChild*以及bootstrap.properties文件中也指定*spring.application.name=springBootstrap*
+
+运行main方法之后打印的关键信息如下:
+
+```
+application parent context id: bootstrap
+application context id: springBootstrap-1
+```
+
+经过在*org.springframework.boot.context.ContextIdApplicationContextInitializer*类上进行断点调试发现**只有用户级ApplicationContext被创建的过程中会实例化用户自定义Bean**。也就是说**bootstrapContext并不会去实例化用户自定义的Bean**，这样就很安全。
+
+**那么为何如此呢???**
+
+其实很简单，**因为bootstrapContext指定的source类只有BootstrapImportSelectorConfiguration，并没有用户编写的启动类，也就无法影响用户级别Context的Bean加载实例化了，并且该类上无@EnableAutoConfiguration、@ComponentScan注解，表明其也不会去扫描我们自己的包以及处理spring.factories文件中@EnableAutoConfiguration注解key对应的配置集合**， 而用户自己编写的启动类上都会有@SpringBootApplication注解，该注解是一个复合注解，里面会引入了@EnableAutoConfiguration、@ComponentScan、@SpringBootConfiguration，它会扫描我们自己的包以及处理spring.factories文件中@EnableAutoConfiguration注解key对应的配置集合。
