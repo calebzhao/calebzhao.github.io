@@ -63,6 +63,8 @@ class Thread2 implements Runnable{
 
 **1). 初始状态**
 
+
+
 1. 实现Runnable接口和继承Thread可以得到一个线程类，new一个实例出来，线程就进入了初始状态
 
 **2). 可运行状态**
@@ -700,7 +702,7 @@ public class ThreadCloseDemo2 {
 ## 5.5、interrupt()、interrupted()、isInterrupted()区别与原理
 
 ### 5.5.1、结论
-* interrupt()方法：用于中断线程的，调用该方法的线程的状态将被置为"中断"状态。**注意：线程中断仅仅是设置线程的中断状态位，不会停止线程。需要用户自己去监视线程的状态并做处理**。支持线程中断的方法（也就是线程中断后会抛出InterruptedException的方法，比如Thread.sleep，以及Object.wait等方法）就是在监视线程的中断状态，一旦线程的中断状态被置为“中断状态”，就会抛出中断异常,并将线程的中断状态为设置为false。
+* interrupt()方法：用于中断线程的，调用该方法的线程的状态将被置为"中断"状态。**注意：线程中断仅仅是设置线程的中断状态位，不会停止线程。需要用户自己去监视线程的状态并做处理**。支持线程中断的方法（也就是线程中断后会抛出InterruptedException的方法，比如Thread.sleep，以及Object.wait等方法）就是在监视线程的中断状态，一旦线程的中断状态被置为“中断状态”，**就会抛出中断异常,并将线程的中断状态为设置为false**。
 * interrupted()：返回线程是否处于已中断状态并清除中断状态
 * isInterrupted()：返回线程是否处于已中断状态
 
@@ -3773,7 +3775,428 @@ class SynchronizedCouter implements Counter{
 
 多次运行示例代码，会发现基本上每次synchronizedCouter的耗时最短，这也说明了synchronized使用锁的方式性能并不一定低。
 
+# 15、Future
+
+## 15.1、Future的get()和isDone()方法
+
+当任务还没执行完成时调用Future类的get()方法会阻塞当前线程
+
+调用Future类的isDone()方法会立即返回任务是否执行完成
+
+```
+package futureDemo;
+
+import java.util.concurrent.*;
+
+/**
+ * @author calebzhao
+ * @date 2020/6/1 11:06
+ */
+public class FutureDemo2 {
+
+    public static void main(String[] args) {
+        ExecutorService executorService= new ThreadPoolExecutor(10, 100, 5, TimeUnit.SECONDS, new LinkedBlockingDeque<>());
+        // submit提交的可以有返回值，可以捕获异常
+        // execute提交的任务没有返回值，不能捕获异常
+        Future<String> future = executorService.submit(new Callable<String>() {
+            @Override
+            public String call() throws Exception {
+                TimeUnit.SECONDS.sleep(2);
+                return "success";
+            }
+        });
+
+        try {
+            System.out.println("begin :" + System.currentTimeMillis() +", isDone:" + future.isDone());
+            String result = future.get();
+            System.out.println("result:" + result);
+            System.out.println("end: " + System.currentTimeMillis()+", isDone:" + future.isDone());
+        }
+        catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        catch (ExecutionException e) {
+            e.printStackTrace();
+        }
+    }
+}
+
+```
+
+## 15.2、Executor.submit(Runnable task, T result)方法的使用
+
+```java
+package futureDemo;
+
+/**
+ * @author calebzhao
+ * @date 2020/6/1 11:25
+ */
+public class UserInfo {
+
+    private String username;
+    private String password;
+
+    public UserInfo() {
+    }
+
+    public UserInfo(String username, String password) {
+        this.username = username;
+        this.password = password;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    @Override
+    public String toString() {
+        return "UserInfo{" +
+                "username='" + username + '\'' +
+                ", password='" + password + '\'' +
+                '}';
+    }
+}
+
+```
+
+
+
+```java
+package futureDemo;
+
+/**
+ * @author calebzhao
+ * @date 2020/6/1 11:26
+ */
+public class MyRunnable implements Runnable {
+
+    private UserInfo userInfo;
+
+    public MyRunnable(UserInfo userInfo){
+        this.userInfo = userInfo;
+    }
+
+    @Override
+    public void run() {
+        userInfo.setUsername("test");
+        userInfo.setPassword("password");
+    }
+}
+
+```
+
+```java
+package futureDemo;
+
+import java.util.concurrent.*;
+
+/**
+ * @author calebzhao
+ * @date 2020/6/1 11:06
+ */
+public class FutureDemo3 {
+
+    public static void main(String[] args) {
+        ExecutorService executorService= new ThreadPoolExecutor(10, 100, 5, TimeUnit.SECONDS, new LinkedBlockingDeque<>());
+        // submit提交的可以有返回值，可以捕获异常
+        // execute提交的任务没有返回值，不能捕获异常
+        UserInfo userInfo = new UserInfo();
+        MyRunnable myRunnable = new MyRunnable(userInfo);
+        Future<UserInfo> future = executorService.submit(myRunnable, userInfo);
+
+        try {
+            System.out.println("begin :" + System.currentTimeMillis() +", isDone:" + future.isDone());
+            userInfo = future.get();
+            System.out.println("result:" + userInfo);
+            System.out.println("end: " + System.currentTimeMillis()+", isDone:" + future.isDone());
+        }
+        catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        catch (ExecutionException e) {
+            e.printStackTrace();
+        }
+    }
+}
+
+```
+
+
+
+## 15.3、Executor的submit()和execute()方法的区别
+
+**submit提交的可以有返回值，可以捕获异常**
+**execute提交的任务没有返回值，不能捕获异常, 内部直接打印出异常信息**
+
+```java
+package futureDemo;
+
+import java.util.concurrent.*;
+
+/**
+ * @author calebzhao
+ * @date 2020/6/1 11:41
+ */
+public class ExecuptionDemo {
+
+    public static void main(String[] args) {
+        ExecutorService executorService= new ThreadPoolExecutor(10, 100, 5, TimeUnit.SECONDS, new LinkedBlockingDeque<>());
+
+
+        try{
+            // submit提交的可以有返回值，可以捕获异常
+            // execute提交的任务没有返回值，不能捕获异常, 内部直接打印出异常信息
+
+            executorService.execute(() ->{
+                Integer.parseInt("a");
+            });
+        }
+        catch (Exception e){
+            System.out.println("execute 执行出错， 实际不会执行到这里，异常打印出来了，但是明明自己没打印啊");
+        }
+
+
+        try{
+            Future<Integer> future = executorService.submit(() -> {
+                return Integer.parseInt("a");
+            });
+            System.out.println( future.get());
+        }
+        catch (Exception e){
+            System.out.println("submit 执行出错，会执行到这里");
+        }
+
+    }
+}
+
+```
+
+## 15.4、cancel()方法
+
+cancel()会取消正在执行中的任务，通过future.isCancelled()方法返回任务是否取消成功，如果任务已经执行了再调用cancel()方法，那么isCancelled()返回false
+
+```java
+package futureDemo;
+
+import java.util.concurrent.*;
+
+/**
+ * @author calebzhao
+ * @date 2020/6/1 11:06
+ */
+public class FutureDemo4 {
+
+    static class MyCancelCallable implements Callable<String>{
+
+        @Override
+        public String call() throws Exception {
+            try{
+                int i =0;
+                while (true){
+                    if (Thread.currentThread().isInterrupted()){
+                        System.out.println("interrupted");
+                        throw new InterruptedException();
+                    }
+
+                    i++;
+                }
+            }
+            catch (Exception e){
+                e.printStackTrace();
+            }
+
+
+            System.out.println("结束");
+            return "success";
+        }
+    }
+
+    public static void main(String[] args) throws InterruptedException {
+        ExecutorService executorService= new ThreadPoolExecutor(10, 100, 5, TimeUnit.SECONDS, new LinkedBlockingDeque<>());
+        // submit提交的可以有返回值，可以捕获异常
+        // execute提交的任务没有返回值，不能捕获异常
+        MyCancelCallable myCancelCallable = new MyCancelCallable();
+        Future<String> future = executorService.submit(myCancelCallable);
+
+        Thread.sleep(100);
+        System.out.println("begin :" + System.currentTimeMillis() +", isDone:" + future.isDone());
+        boolean cancelResult = future.cancel(true);
+        System.out.println("is canceled:" + future.isCancelled());
+        System.out.println("end: " + System.currentTimeMillis()+", isDone:" + future.isDone());
+    }
+}
+
+```
+
+## 15.5、任务拒绝提交异常
+
+```java
+package futureDemo;
+
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+
+/**
+ * @author calebzhao
+ * @date 2020/6/1 11:55
+ */
+public class RejectedExecutionHandlerDemo {
+
+    static class TestRunnable implements Runnable{
+
+        @Override
+        public void run() {
+            System.out.println(Thread.currentThread().getName());
+        }
+    }
+
+    public static void main(String[] args) {
+        TestRunnable task = new TestRunnable();
+
+        ThreadPoolExecutor executor= new ThreadPoolExecutor(10, 100, 5, TimeUnit.SECONDS, new LinkedBlockingDeque<>());
+        executor.submit(task);
+        executor.submit(task);
+
+        executor.shutdown();
+        executor.submit(task);
+    }
+}
+
+```
+
+```
+"C:\Program Files\Java\jdk1.8.0_201\bin\java.exe" "-javaagent:C:\Program Files\JetBrains\IntelliJ IDEA 2019.3\lib\idea_rt.jar=63009:C:\Program Files\JetBrains\IntelliJ IDEA 2019.3\bin" -Dfile.encoding=UTF-8 -classpath "C:\Program Files\Java\jdk1.8.0_201\jre\lib\charsets.jar;C:\Program Files\Java\jdk1.8.0_201\jre\lib\deploy.jar;C:\Program Files\Java\jdk1.8.0_201\jre\lib\ext\access-bridge-64.jar;C:\Program Files\Java\jdk1.8.0_201\jre\lib\ext\cldrdata.jar;C:\Program Files\Java\jdk1.8.0_201\jre\lib\ext\dnsns.jar;C:\Program Files\Java\jdk1.8.0_201\jre\lib\ext\jaccess.jar;C:\Program Files\Java\jdk1.8.0_201\jre\lib\ext\jfxrt.jar;C:\Program Files\Java\jdk1.8.0_201\jre\lib\ext\localedata.jar;C:\Program Files\Java\jdk1.8.0_201\jre\lib\ext\nashorn.jar;C:\Program Files\Java\jdk1.8.0_201\jre\lib\ext\sunec.jar;C:\Program Files\Java\jdk1.8.0_201\jre\lib\ext\sunjce_provider.jar;C:\Program Files\Java\jdk1.8.0_201\jre\lib\ext\sunmscapi.jar;C:\Program Files\Java\jdk1.8.0_201\jre\lib\ext\sunpkcs11.jar;C:\Program Files\Java\jdk1.8.0_201\jre\lib\ext\zipfs.jar;C:\Program Files\Java\jdk1.8.0_201\jre\lib\javaws.jar;C:\Program Files\Java\jdk1.8.0_201\jre\lib\jce.jar;C:\Program Files\Java\jdk1.8.0_201\jre\lib\jfr.jar;C:\Program Files\Java\jdk1.8.0_201\jre\lib\jfxswt.jar;C:\Program Files\Java\jdk1.8.0_201\jre\lib\jsse.jar;C:\Program Files\Java\jdk1.8.0_201\jre\lib\management-agent.jar;C:\Program Files\Java\jdk1.8.0_201\jre\lib\plugin.jar;C:\Program Files\Java\jdk1.8.0_201\jre\lib\resources.jar;C:\Program Files\Java\jdk1.8.0_201\jre\lib\rt.jar;F:\code\thread-learn\demo1\target\classes;F:\program\nexus-2.11.4-01\sonatype-work\nexus\storage\central\junit\junit\4.12\junit-4.12.jar;F:\program\nexus-2.11.4-01\sonatype-work\nexus\storage\central\org\hamcrest\hamcrest-core\1.3\hamcrest-core-1.3.jar;F:\program\nexus-2.11.4-01\sonatype-work\nexus\storage\central\mysql\mysql-connector-java\6.0.6\mysql-connector-java-6.0.6.jar;F:\program\nexus-2.11.4-01\sonatype-work\nexus\storage\central\org\projectlombok\lombok\1.18.10\lombok-1.18.10.jar" futureDemo.RejectedExecutionHandlerDemo
+pool-1-thread-1
+pool-1-thread-2
+Exception in thread "main" java.util.concurrent.RejectedExecutionException: Task java.util.concurrent.FutureTask@7ea987ac rejected from java.util.concurrent.ThreadPoolExecutor@12a3a380[Shutting down, pool size = 2, active threads = 1, queued tasks = 0, completed tasks = 1]
+	at java.util.concurrent.ThreadPoolExecutor$AbortPolicy.rejectedExecution(ThreadPoolExecutor.java:2063)
+	at java.util.concurrent.ThreadPoolExecutor.reject(ThreadPoolExecutor.java:830)
+	at java.util.concurrent.ThreadPoolExecutor.execute(ThreadPoolExecutor.java:1379)
+	at java.util.concurrent.AbstractExecutorService.submit(AbstractExecutorService.java:112)
+	at futureDemo.RejectedExecutionHandlerDemo.main(RejectedExecutionHandlerDemo.java:35)
+
+Process finished with exit code 1
+```
+
+## 15.6、自定义拒绝任务提交策略
+
+```
+package futureDemo;
+
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.RejectedExecutionHandler;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+
+/**
+ * @author calebzhao
+ * @date 2020/6/1 11:55
+ */
+public class RejectedExecutionHandlerDemo {
+
+    static class TestRunnable implements Runnable{
+
+        @Override
+        public void run() {
+            System.out.println(Thread.currentThread().getName());
+        }
+    }
+
+    public static void main(String[] args) {
+        TestRunnable task = new TestRunnable();
+
+        ThreadPoolExecutor executor= new ThreadPoolExecutor(10, 100, 5, TimeUnit.SECONDS, new LinkedBlockingDeque<>());
+        executor.setRejectedExecutionHandler(new RejectedExecutionHandler() {
+            @Override
+            public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
+                System.out.println("拒绝执行" + r.toString());
+            }
+        });
+        executor.submit(task);
+        executor.submit(task);
+
+        executor.shutdown();
+        executor.submit(task);
+    }
+}
+
+```
+
+```
+"C:\Program Files\Java\jdk1.8.0_201\bin\java.exe" "-javaagent:C:\Program Files\JetBrains\IntelliJ IDEA 2019.3\lib\idea_rt.jar=63388:C:\Program Files\JetBrains\IntelliJ IDEA 2019.3\bin" -Dfile.encoding=UTF-8 -classpath "C:\Program Files\Java\jdk1.8.0_201\jre\lib\charsets.jar;C:\Program Files\Java\jdk1.8.0_201\jre\lib\deploy.jar;C:\Program Files\Java\jdk1.8.0_201\jre\lib\ext\access-bridge-64.jar;C:\Program Files\Java\jdk1.8.0_201\jre\lib\ext\cldrdata.jar;C:\Program Files\Java\jdk1.8.0_201\jre\lib\ext\dnsns.jar;C:\Program Files\Java\jdk1.8.0_201\jre\lib\ext\jaccess.jar;C:\Program Files\Java\jdk1.8.0_201\jre\lib\ext\jfxrt.jar;C:\Program Files\Java\jdk1.8.0_201\jre\lib\ext\localedata.jar;C:\Program Files\Java\jdk1.8.0_201\jre\lib\ext\nashorn.jar;C:\Program Files\Java\jdk1.8.0_201\jre\lib\ext\sunec.jar;C:\Program Files\Java\jdk1.8.0_201\jre\lib\ext\sunjce_provider.jar;C:\Program Files\Java\jdk1.8.0_201\jre\lib\ext\sunmscapi.jar;C:\Program Files\Java\jdk1.8.0_201\jre\lib\ext\sunpkcs11.jar;C:\Program Files\Java\jdk1.8.0_201\jre\lib\ext\zipfs.jar;C:\Program Files\Java\jdk1.8.0_201\jre\lib\javaws.jar;C:\Program Files\Java\jdk1.8.0_201\jre\lib\jce.jar;C:\Program Files\Java\jdk1.8.0_201\jre\lib\jfr.jar;C:\Program Files\Java\jdk1.8.0_201\jre\lib\jfxswt.jar;C:\Program Files\Java\jdk1.8.0_201\jre\lib\jsse.jar;C:\Program Files\Java\jdk1.8.0_201\jre\lib\management-agent.jar;C:\Program Files\Java\jdk1.8.0_201\jre\lib\plugin.jar;C:\Program Files\Java\jdk1.8.0_201\jre\lib\resources.jar;C:\Program Files\Java\jdk1.8.0_201\jre\lib\rt.jar;F:\code\thread-learn\demo1\target\classes;F:\program\nexus-2.11.4-01\sonatype-work\nexus\storage\central\junit\junit\4.12\junit-4.12.jar;F:\program\nexus-2.11.4-01\sonatype-work\nexus\storage\central\org\hamcrest\hamcrest-core\1.3\hamcrest-core-1.3.jar;F:\program\nexus-2.11.4-01\sonatype-work\nexus\storage\central\mysql\mysql-connector-java\6.0.6\mysql-connector-java-6.0.6.jar;F:\program\nexus-2.11.4-01\sonatype-work\nexus\storage\central\org\projectlombok\lombok\1.18.10\lombok-1.18.10.jar" futureDemo.RejectedExecutionHandlerDemo
+pool-1-thread-1
+拒绝执行java.util.concurrent.FutureTask@7ea987ac
+pool-1-thread-2
+
+Process finished with exit code 0
+```
+
+
+
+## 15.7、自定义异常处理
+
+```java
+package futureDemo;
+
+import java.util.concurrent.*;
+
+/**
+ * @author calebzhao
+ * @date 2020/6/1 11:41
+ */
+public class ExecuptionDemo2 {
+
+    public static void main(String[] args) {
+        ThreadPoolExecutor executor= new ThreadPoolExecutor(10, 100, 5, TimeUnit.SECONDS, new LinkedBlockingDeque<>());
+        executor.setThreadFactory(new ThreadFactory() {
+            @Override
+            public Thread newThread(Runnable r) {
+                Thread thread = new Thread(r);
+                thread.setUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+                    @Override
+                    public void uncaughtException(Thread t, Throwable e) {
+                        System.out.println("execute方法提交的任务可以通过自定义ThreadFactory捕获异常");
+                        e.printStackTrace();
+                    }
+                });
+                return thread;
+            }
+        });
+
+        try{
+            // submit提交的可以有返回值，可以捕获异常
+            // execute提交的任务没有返回值，不能捕获异常, 内部直接打印出异常信息
+
+            executor.execute(() ->{
+                Integer.parseInt("a");
+            });
+        }
+        catch (Exception e){
+            System.out.println("execute 执行出错， 实际不会执行到这里，异常打印出来了，但是明明自己没打印啊");
+        }
+
+    }
+}
+```
+
+
+
 # 16、JUC
+
 ## 16.1、CountDownLatch
 ### 16.1.1、介绍
 CountDownLatch简单理解为倒计数器，这个类通常用来控制线程等待，它可以让一个线程等待直到倒计数器的值为0，再开始执行
