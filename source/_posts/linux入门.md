@@ -2345,6 +2345,7 @@ rancher/net               holder              665d9f6e8cc1        3 years ago   
 
 
 
+
 ### 2.2.5、删除镜像
 
 ​	命令: `docker image rm <镜像ID>`
@@ -3592,8 +3593,8 @@ Created symlink from /etc/systemd/system/sockets.target.wants/telnet.socket to /
 tcp6       0      0 :::23                   :::*                    LISTEN      1/systemd          
 
 #开启防火墙23端口
-[root@linux-node3 ~]firewall-cmd --permanent --add-port=23/tcp --zone=public
-[root@linux-node3 ~]firewall-cmd --reload
+[root@linux-node3 ~]# firewall-cmd --permanent --add-port=23/tcp --zone=public
+[root@linux-node3 ~]# firewall-cmd --reload
 
 ```
 
@@ -3674,20 +3675,14 @@ https://openbsd.hk/pub/OpenBSD/OpenSSH/portable/
 **开始安装openssl**
 
 ```
-[root@linux-node3 ~]# mkdir /data/tools -p
-[root@linux-node3 ~]# cd /data/tools/
-[root@linux-node3 /data/tools]# rz -E
-rz waiting to receive.
-[root@linux-node3 /data/tools]# ll
-total 5224
--rw-r--r-- 1 root root 5348369 Apr 27 12:19 openssl-1.0.2r.tar.gz
- 
+[root@linux-node3 ~]# wget https://github.com/openssl/openssl/archive/refs/tags/OpenSSL_1_1_1l.tar.gz
+
 解压文件
-[root@linux-node3 /data/tools]# tar xfz openssl-1.0.2r.tar.gz
+[root@linux-node3 /data/tools]# tar xfz OpenSSL_1_1_1l.tar.gz
 [root@linux-node3 /data/tools]# ll
 total 5228
-drwxr-xr-x 20 root root    4096 Apr 27 12:20 openssl-1.0.2r
--rw-r--r--  1 root root 5348369 Apr 27 12:19 openssl-1.0.2r.tar.gz
+drwxr-xr-x 20 root root    4096 Apr 27 12:20 openssl-OpenSSL_1_1_1l
+-rw-r--r--  1 root root 5348369 Apr 27 12:19 OpenSSL_1_1_1l
 [root@linux-node3 /data/tools]# cd
 [root@linux-node3 ~]#
  
@@ -3728,7 +3723,7 @@ total 1864
 ```
 [root@linux-node3 ~]# cd /data/tools/openssl-1.0.2r/
  
-[root@linux-node3 /data/tools/openssl-1.0.2r]# ./config shared && make && make install
+[root@linux-node3 /data/tools/openssl-1.0.2r]# ./config shared --prefix=/usr/local/openssl && make && make install
 ```
 
 以上命令执行完毕，echo $?查看下最后的make install是否有报错，0表示没有问题
@@ -3740,26 +3735,26 @@ total 1864
 下面2个文件或者目录做软链接 （刚才前面的步骤mv备份过原来的）
 
 ```
-[root@linux-node3 ~]``# ln -s /usr/local/ssl/bin/openssl /usr/bin/openssl
-[root@linux-node3 ~]``# ln -s /usr/local/ssl/include/openssl /usr/include/openssl
-[root@linux-node3 ~]``# ll /usr/bin/openssl
-lrwxrwxrwx 1 root root 26 Apr 27 12:31 ``/usr/bin/openssl` `-> ``/usr/local/ssl/bin/openssl
-[root@linux-node3 ~]``# ll /usr/include/openssl -ld
-lrwxrwxrwx 1 root root 30 Apr 27 12:31 ``/usr/include/openssl` `-> ``/usr/local/ssl/include/openssl
-[root@linux-node3 ~]``#
+[root@linux-node3 ~]# ln -s /usr/local/openssl/bin/openssl /usr/bin/openssl
+[root@linux-node3 ~]# ln -s /usr/local/openssl/include /usr/include/openssl
+[root@linux-node3 ~]# ll /usr/bin/openssl
+lrwxrwxrwx 1 root root 26 Apr 27 12:31 /usr/bin/openssl -> /usr/local/bin/openssl
+[root@linux-node3 ~]# ll /usr/include/openssl -ld
+lrwxrwxrwx 1 root root 30 Apr 27 12:31 /usr/include/openssl -> /usr/local/include/openssl
+[root@linux-node3 ~]#
 ```
 
 命令行执行下面2个命令加载新配置
 
 ```
-echo` `"/usr/local/ssl/lib"` `>> ``/etc/ld``.so.conf
+echo "/usr/local/openssl/lib6/" >> /etc/ld.so.conf
 /sbin/ldconfig
 ```
 
   查看确认版本。没问题
 
 ```
-[root@testssh ~]``# openssl version
+[root@testssh ~]# openssl version
 OpenSSL 1.0.2r 26 Feb 2019
 ```
 
@@ -3793,7 +3788,7 @@ drwxr-xr-x 20 root root  4096 Apr 23 23:12 openssl-1.0.2r
 
 ```
 [root@testssh tools]# rm -rf /etc/ssh/*
-[root@testssh tools]# ./configure --with-zlib --with-ssl-dir --with-pam --bindir=/usr/bin --sbindir=/usr/sbin --sysconfdir=/etc/ssh
+[root@testssh tools]# ./configure --prefix=/usr/local/openssh --sysconfdir=/etc/ssh --with-pam --with-ssl-dir=/usr/local/openssl --with-md5-passwords --mandir=/usr/share/man --with-zlib=/usr/local/zlib --without-hardening
 [root@testssh tools]# make && make install
 ```
 
